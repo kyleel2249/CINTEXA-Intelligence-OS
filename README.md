@@ -45,9 +45,9 @@ Bitget is the only configured execution venue. No paper or testnet order route e
 
 Use a Bitget API key without withdrawal permissions when authenticated account services are introduced. Store credentials as Cloudflare Worker secrets, never in web/mobile bundles. Public market data uses unauthenticated endpoints.
 
-## GainzAlgo integrity and signal policy
+## ETIAlgo V3 Alpha
 
-The V2 and Alpha adapters intentionally return neutral signals until authorised strategy source or exact specifications are supplied. No proprietary rules are invented. The SMC engine contains deterministic baseline implementations of FVG, liquidity sweeps, BOS and order blocks. The signal endpoint obtains its candles and instrument status server-side; it does not trust client-supplied market freshness or risk approval. A signal remains non-executable until both strategy adapters and independent account-risk controls are verified.
+ETIAlgo V3 Alpha is ETI's native, independently developed algorithm. It does not depend on GainzAlgo V2 or V2 Alpha, external indicator licences or proprietary vendor source code. Its initial implementation contains a V3 core engine using EMA alignment, MACD, RSI, ADX, ATR, VWAP, Bollinger context and relative volume; an Alpha impulse engine for candle expansion and local momentum breaks; and a confluence layer comparing both engines with recent BOS, liquidity sweep, FVG and order-block evidence. It returns a heuristic signal-quality score, market-regime label, evidence and entry context. Scores are not calibrated probabilities. Multi-timeframe orchestration, order-book/funding/open-interest intelligence, backtesting, walk-forward validation and model calibration remain future phases. The Worker obtains market data and instrument status server-side and does not trust client-supplied freshness or risk approval. Signals remain non-executable until independent account-risk controls and the full protective-order lifecycle are verified.
 
 No indicator or model can guarantee profitable or accurate future trades. Backtesting, walk-forward validation, fee/slippage modelling and out-of-sample evaluation are required before any strategy is relied upon.
 
