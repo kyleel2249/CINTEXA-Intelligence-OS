@@ -1,0 +1,6 @@
+import test from'node:test';import assert from'node:assert/strict';import{buildTradePlan}from'../worker/src/core/trade-planner.js';
+const candles=Array.from({length:20},(_,i)=>({high:110+i*.1,low:90+i*.1,close:100+i*.1}));
+test('builds a long plan with ATR stop and graduated reward targets',()=>{const p=buildTradePlan({direction:'BUY',entry:105,atr:2,candles,equity:10000,riskFraction:.005,leverage:5,availableBalance:1000,maxNotional:50000});assert.equal(p.direction,'BUY');assert.ok(p.stopLoss<105);assert.equal(p.targets.length,3);assert.ok(p.quantity>0);assert.equal(p.executionReady,false)});
+test('builds a short plan with targets below entry',()=>{const p=buildTradePlan({direction:'SELL',entry:105,atr:2,equity:10000,availableBalance:1000});assert.ok(p.stopLoss>105);assert.ok(p.targets.every(t=>t.price<105))});
+test('rejects invalid risk and market inputs',()=>{assert.throws(()=>buildTradePlan({direction:'BUY',entry:100,atr:0,equity:1000}),/bounds/);assert.throws(()=>buildTradePlan({direction:'HOLD',entry:100,atr:1,equity:1000}),/bounds/)});
+test('caps notional to available margin and leverage',()=>{const p=buildTradePlan({direction:'BUY',entry:100,atr:1,equity:10000,availableBalance:100,leverage:2,maxNotional:10000});assert.ok(p.notional<=200.000001)});
