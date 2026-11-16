@@ -11,14 +11,28 @@ npm install
 npm run dev:web
 npm test
 npm run check
+npm run build:web
 ```
+
+The static web application expects the Worker API on the same origin by default. When the Worker is hosted separately, define `window.CINTEXA_API_BASE` before loading `src.js` with the Worker hostname. Configure the Worker `CORS_ORIGIN` variable to the exact Pages/site origin.
+
+## Bitget market-data API
+
+The Worker exposes public market-data routes; market data does not require API credentials:
+
+- `GET /api/market/instruments?productType=USDT-FUTURES`
+- `GET /api/market/ticker?productType=USDT-FUTURES&symbol=BTCUSDT`
+- `GET /api/market/candles?productType=USDT-FUTURES&symbol=BTCUSDT&granularity=1min&limit=200`
+- `POST /api/eti/signals` with `{"productType":"USDT-FUTURES","symbol":"BTCUSDT","granularity":"1min"}`
+
+Supported product families: Spot, Margin metadata, USDT Futures, USDC Futures and Coin Futures. Candle intervals are validated and normalized for Bitget's Spot and Mix APIs. The web command centre refreshes ticker and one-minute candle history every 60 seconds.
 
 ## Architecture
 
 - Web: Vite, vanilla ES modules and responsive CSS.
 - Mobile: Expo / React Native.
 - API: Cloudflare Workers.
-- Relational records: Cloudflare D1.
+- Relational records: Cloudflare D1 (initial schema committed; runtime persistence integration remains in progress).
 - Planned real-time coordination: Durable Objects.
 - Planned background processing: Queues and Cron.
 - Object storage: R2.
@@ -27,14 +41,16 @@ Free-tier quotas apply; they do not guarantee continuous high-frequency producti
 
 ## ETI execution policy
 
-Bitget is the only configured execution venue. No paper or testnet order route exists in this project. Live order submission remains disabled until production authentication, account reconciliation, server-side risk evaluation, instrument metadata, idempotency and exchange-side protective-order services have been independently implemented and verified.
+Bitget is the only configured execution venue. No paper or testnet order route exists in this project. **Live order submission is hard-disabled in code.** The order function rejects every request until production authentication, independently computed server-side risk, instrument metadata, exchange-side stop-loss/take-profit placement, idempotency, fill reconciliation and emergency position management have been implemented and tested. Environment flags or client-supplied attestations cannot bypass this block.
 
-Use a Bitget API key without withdrawal permissions. Store credentials as Cloudflare Worker secrets, never in web/mobile bundles.
+Use a Bitget API key without withdrawal permissions when authenticated account services are introduced. Store credentials as Cloudflare Worker secrets, never in web/mobile bundles. Public market data uses unauthenticated endpoints.
 
-## GainzAlgo integrity
+## GainzAlgo integrity and signal policy
 
-The V2 and Alpha adapters intentionally return neutral signals until authorised strategy source or exact specifications are supplied. No proprietary rules are invented. The SMC engine contains deterministic baseline implementations of FVG, liquidity sweeps, BOS and order blocks; it is not a guarantee of profitable signals.
+The V2 and Alpha adapters intentionally return neutral signals until authorised strategy source or exact specifications are supplied. No proprietary rules are invented. The SMC engine contains deterministic baseline implementations of FVG, liquidity sweeps, BOS and order blocks. The signal endpoint obtains its candles and instrument status server-side; it does not trust client-supplied market freshness or risk approval. A signal remains non-executable until both strategy adapters and independent account-risk controls are verified.
 
-## Status
+No indicator or model can guarantee profitable or accurate future trades. Backtesting, walk-forward validation, fee/slippage modelling and out-of-sample evaluation are required before any strategy is relied upon.
 
-This is an early foundation, not a production-ready autonomous trading platform. The interface and initial modules are committed; real account connectivity, authenticated user identity, full exchange order lifecycle, market WebSockets, departmental agent runtime, D1-backed persistence and production acceptance tests remain outstanding.
+## Current status
+
+This is an early foundation, not a production-ready autonomous trading platform. Implemented: executive interface, department directory, Bitget public REST market-data service, minute-refreshing market chart, initial SMC engine, risk module, strategy adapter contracts, D1 schema and CI checks. Outstanding: Bitget WebSocket streaming, complete instrument metadata synchronisation, authenticated user identity and roles, D1-backed runtime persistence, exact authorised GainzAlgo V2/Alpha rules, comprehensive strategy validation, account reconciliation, protective-order lifecycle, and full production acceptance/security testing.
