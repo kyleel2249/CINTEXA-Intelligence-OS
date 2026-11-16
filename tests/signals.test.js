@@ -1,0 +1,5 @@
+import test from'node:test';import assert from'node:assert/strict';import{evaluateTrade}from'../worker/src/core/signals.js';
+const candles=Array.from({length:40},(_,i)=>({time:Date.now()-((39-i)*60000),open:100,high:101,low:99,close:100,volume:10}));
+test('flat candles with unavailable proprietary strategies always return NO TRADE',async()=>{const r=await evaluateTrade({candles,market:{dataFresh:true,instrumentTradable:true},risk:{approved:true,rewardRisk:3}});assert.equal(r.decision,'NO TRADE');assert.equal(r.direction,'NEUTRAL');assert.equal(r.executable,false);assert.ok(r.reasons.some(x=>x.includes('GainzAlgo')))});
+test('unapproved risk prevents execution even with fresh tradable market data',async()=>{const r=await evaluateTrade({candles,market:{dataFresh:true,instrumentTradable:true},risk:{approved:false,rewardRisk:3}});assert.equal(r.executable,false);assert.ok(r.reasons.some(x=>x.includes('risk')))});
+test('insufficient candles returns a safe NO TRADE result',async()=>{const r=await evaluateTrade({candles:candles.slice(0,10)});assert.equal(r.decision,'NO TRADE');assert.equal(r.executable,false)});
