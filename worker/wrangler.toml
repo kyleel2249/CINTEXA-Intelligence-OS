@@ -1,0 +1,11 @@
+name="cintexa-intelligence-os-api"
+main="src/index.js"
+compatibility_date="2026-11-16"
+workers_dev=true
+[[d1_databases]]
+binding="DB"
+database_name="cintexa-intelligence-os"
+database_id="REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir="migrations"
+[vars]
+ETI_LIVE_ENABLED="false"
