@@ -1,7 +1,13 @@
-import test from'node:test';import assert from'node:assert/strict';import{detectBOS,detectFVG,findSwings,analyseSMC}from'../worker/src/core/smc.js';
+import test from'node:test';import assert from'node:assert/strict';import{detectBOS,detectFVG,findSwings,analyseSMC,detectCHoCH,detectIFVG,detectEqualLevels,calculatePremiumDiscount,detectInducement}from'../worker/src/core/smc.js';
 const candles=[{open:10,high:11,low:9,close:10},{open:10,high:12,low:10,close:11},{open:14,high:16,low:13,close:15}];
 test('detects bullish three-candle FVG',()=>{const f=detectFVG(candles);assert.equal(f.length,1);assert.equal(f[0].direction,'bullish');assert.equal(f[0].lower,11);assert.equal(f[0].upper,13)});
 test('does not mark an FVG mitigated when price never intersects its zone',()=>{const f=detectFVG([...candles,{open:9,high:10,low:8,close:9}]);assert.equal(f[0].mitigated,false)});
 test('returns no swings with insufficient candles',()=>assert.deepEqual(findSwings(candles,2,2),[]));
 test('detects a close-confirmed bullish BOS only once per swing',()=>{const bars=[{open:9,high:10,low:8,close:9},{open:9,high:11,low:9,close:10},{open:10,high:12,low:9,close:11},{open:11,high:11.8,low:10,close:11.2},{open:11.2,high:11.9,low:10.5,close:11.5},{open:11.5,high:13,low:11,close:12.5},{open:12.5,high:14,low:12,close:13.5}];const bos=detectBOS(bars,[{index:2,type:'high',price:12}]);assert.equal(bos.length,1);assert.equal(bos[0].index,5);assert.equal(bos[0].direction,'bullish')});
+test('detects a change of character when BOS direction flips',()=>{const r=detectCHoCH([{index:5,direction:'bullish',level:10},{index:12,direction:'bearish',level:9}]);assert.equal(r.length,1);assert.equal(r[0].direction,'bearish')});
+test('detects an inverted bullish FVG after a close below its lower boundary',()=>{const bars=[...candles,{open:10,high:11,low:8,close:9}];const r=detectIFVG(bars);assert.equal(r.length,1);assert.equal(r[0].direction,'bearish')});
+test('detects equal swing highs within tolerance',()=>{const r=detectEqualLevels([{index:2,type:'high',price:100},{index:5,type:'high',price:100.05}]);assert.equal(r[0].type,'EQH')});
+test('classifies price below range equilibrium as discount',()=>{const r=calculatePremiumDiscount([{open:4,high:10,low:0,close:2}]);assert.equal(r.zone,'discount');assert.equal(r.equilibrium,5)});
+test('detects sweep followed by directional BOS as inducement evidence',()=>{const r=detectInducement([{index:5,direction:'bullish',sweptLevel:90}],[{index:9,direction:'bullish',level:95}]);assert.equal(r.length,1)});
+test('exposes extended SMC modules',()=>{const r=analyseSMC([...candles,{open:15,high:17,low:14,close:16}]);assert.ok(Array.isArray(r.choch));assert.ok(Array.isArray(r.ifvg));assert.ok(Array.isArray(r.equalLevels));assert.ok('premiumDiscount'in r)});
 test('rejects malformed candles',()=>assert.throws(()=>analyseSMC([{open:1,high:0,low:2,close:1}]),/Candles/));
