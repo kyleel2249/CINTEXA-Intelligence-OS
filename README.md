@@ -1,29 +1,40 @@
 # CINTEXA Intelligence OS
 
-A multi-department AI operating platform with a shared organisational memory, web command centre, React Native mobile client, and ETI as a live-Bitget-only trading department.
+Multi-department organisational intelligence platform with a responsive web command centre, React Native mobile client and ETI as a Bitget-live-only department.
 
-## Current status
+## Run the web application
 
-This is an initial runnable foundation. It includes the approved dark command-centre UI, department registry and hierarchy, shared-memory schema, deterministic Smart Money Concepts calculations, signal fusion and risk gates, and a Bitget live adapter that fails closed unless explicitly configured.
+Requires Node.js 20+.
 
-It does not claim to reproduce proprietary GainzAlgo V2/Alpha logic without authorised source code or exact documented rules. The adapters are integration contracts, not a substitute for those strategies.
+```bash
+npm install
+npm run dev:web
+npm test
+npm run check
+```
 
-Live execution is disabled until production identity, account synchronisation, instrument rules, risk policy, exchange-side protection, reconciliation and acceptance tests are complete. No paper/testnet execution route is included.
+## Architecture
 
-## Run
+- Web: Vite, vanilla ES modules and responsive CSS.
+- Mobile: Expo / React Native.
+- API: Cloudflare Workers.
+- Relational records: Cloudflare D1.
+- Planned real-time coordination: Durable Objects.
+- Planned background processing: Queues and Cron.
+- Object storage: R2.
 
-- Node.js 20+
-- `npm install`
-- `npm run dev:web`
-- `npm test`
-- `npm run check`
+Free-tier quotas apply; they do not guarantee continuous high-frequency production trading.
 
-## Cloudflare
+## ETI execution policy
 
-Deploy the web app to Pages and the API to Workers. Configure D1 and optional KV bindings from `worker/wrangler.toml`. Apply reviewed migrations before deploying.
+Bitget is the only configured execution venue. No paper or testnet order route exists in this project. Live order submission remains disabled until production authentication, account reconciliation, server-side risk evaluation, instrument metadata, idempotency and exchange-side protective-order services have been independently implemented and verified.
 
-Secrets must be configured using Wrangler secrets and must never be placed in frontend code. Bitget API credentials must not have withdrawal permissions.
+Use a Bitget API key without withdrawal permissions. Store credentials as Cloudflare Worker secrets, never in web/mobile bundles.
 
-## Important limitations
+## GainzAlgo integrity
 
-The current UI is a foundation, not a completed production system. Authentication, production permissions, D1-backed order persistence, WebSocket market ingestion, complete order reconciliation, and exchange-side stop/TP lifecycle require implementation and verification. SMC algorithms require market-specific validation. GainzAlgo exact strategy logic requires authorised definitions or source.
+The V2 and Alpha adapters intentionally return neutral signals until authorised strategy source or exact specifications are supplied. No proprietary rules are invented. The SMC engine contains deterministic baseline implementations of FVG, liquidity sweeps, BOS and order blocks; it is not a guarantee of profitable signals.
+
+## Status
+
+This is an early foundation, not a production-ready autonomous trading platform. The interface and initial modules are committed; real account connectivity, authenticated user identity, full exchange order lifecycle, market WebSockets, departmental agent runtime, D1-backed persistence and production acceptance tests remain outstanding.
