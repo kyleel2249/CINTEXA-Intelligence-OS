@@ -5,7 +5,7 @@ workers_dev=true
 [[d1_databases]]
 binding="DB"
 database_name="cintexa-intelligence-os"
-database_id="REPLACE_WITH_D1_DATABASE_ID"
+database_id="5c6b0816-da0d-46b9-b641-9bc36de65fc0"
 migrations_dir="migrations"
 [vars]
 ETI_LIVE_ENABLED="false"
