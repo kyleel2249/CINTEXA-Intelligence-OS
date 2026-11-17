@@ -119,7 +119,7 @@ async function handleSignals(req, env) {
   const latest = candles.at(-1), fresh = Boolean(latest && Date.now() - latest.time <= 2 * (granularityMs[granularity] || 60000));
   const instrumentTradable = Boolean(instrument && ['normal', 'online', 'listed'].includes(String(instrument.symbolStatus || instrument.status || '').toLowerCase()));
   let historicalOutcomes=[];
-  if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType,limit:1500})).items||[]}catch(error){console.error('[eti-calibration]',error?.message||error)}
+  if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType,timeframe:granularity,limit:1500})).items||[]}catch(error){console.error('[eti-calibration]',error?.message||error)}
   const result = await evaluateTrade({ candles, timeframes, primaryTimeframe: granularity, market: { dataFresh: fresh, instrumentTradable, source: 'BITGET', context: marketContext, historicalOutcomes }, risk: { approved: false } });
   // Only persist for symbols the exchange catalogue confirms; this keeps arbitrary public requests from polluting history.
   let historyWrite = { stored: 0, errors: ['Instrument not confirmed in the Bitget catalogue; nothing persisted'] };
@@ -172,7 +172,7 @@ async function handleBybitSignals(req,env){
  const instrumentTradable=String(instrument?.status||'').toLowerCase()==='trading';
  const outcomeProduct='BYBIT-'+category.toUpperCase();
  let historicalOutcomes=[];
- if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType:outcomeProduct,limit:1500})).items||[]}catch(error){console.error('[bybit-calibration]',error?.message||error)}
+ if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType:outcomeProduct,timeframe:primary[1],limit:1500})).items||[]}catch(error){console.error('[bybit-calibration]',error?.message||error)}
  const result=await evaluateTrade({candles,timeframes,primaryTimeframe:primary[1],market:{dataFresh:fresh,instrumentTradable,source:'BYBIT',context:marketContext,historicalOutcomes},risk:{approved:false}});
  let historyWrite={stored:0,errors:['Instrument not confirmed in Bybit catalogue; nothing persisted']};
  let signalWrite={persisted:false,reason:'D1 binding unavailable or instrument unconfirmed'},outcomeWrite={updated:0};
@@ -298,7 +298,7 @@ export default {
       }
       if (u.pathname === '/api/eti/performance' && req.method === 'GET') {
         if (!env.DB) return json({ error: 'D1 database binding is unavailable' }, 503, env);
-        return json(await readSignalPerformance(env.DB, { symbol: u.searchParams.get('symbol'), productType: assertProductType(u.searchParams.get('productType')), limit: u.searchParams.get('limit') || 1000 }), 200, env);
+        return json(await readSignalPerformance(env.DB, { symbol: u.searchParams.get('symbol'), productType: assertProductType(u.searchParams.get('productType')), timeframe:u.searchParams.get('timeframe')||undefined, limit: u.searchParams.get('limit') || 1000 }), 200, env);
       }
       if (u.pathname === '/api/eti/orders' && req.method === 'POST') {
         if (!env.ETI_EXECUTION_TOKEN || !(await safeEqual(req.headers.get('authorization') || '', `Bearer ${env.ETI_EXECUTION_TOKEN}`))) return json({ error: 'Unauthorised' }, 401, env);
