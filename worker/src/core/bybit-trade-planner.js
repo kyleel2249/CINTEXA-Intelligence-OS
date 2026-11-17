@@ -32,7 +32,7 @@ function buildInversePlan({input,instrument,ticker}){
 export function buildBybitTradePlan({input,instrument,ticker,spotMarginState,borrowQuota}={}){
  if(!input||typeof input!=='object'||Array.isArray(input))throw new TypeError('Bybit trade-plan input is required');
  const category=String(input.category||'linear').toLowerCase();
- if(!['spot','linear'].includes(category))throw new TypeError('Bybit planning currently supports Spot and Linear contracts. Inverse and Options require dedicated contract-payoff models.');
+ if(!['spot','linear','inverse'].includes(category))throw new TypeError('Bybit Options require a dedicated premium-and-Greeks risk model.');
  const symbol=String(input.symbol||instrument?.symbol||'').toUpperCase();
  if(!symbol||symbol!==String(instrument?.symbol||'').toUpperCase())throw new TypeError('A matching Bybit instrument is required');
  if(String(instrument.status||'').toLowerCase()!=='trading')throw new RangeError('Bybit instrument is not currently trading');
