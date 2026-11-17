@@ -71,7 +71,7 @@ async function connectBybitAccount(){
   const walletRes=await fetch(apiBase+'/api/bybit/account',{headers:{'x-eti-exchange-token':token}});
   const wallet={ok:walletRes.ok,status:walletRes.status,data:await readApi(walletRes)};
   if(!wallet.ok)throw new Error(wallet.data.error||'Bybit account access denied (HTTP '+wallet.status+').');
-  const snapshot=wallet.data.data||{},account=snapshot.wallet?.list?.[0]||{},coins=account.coin||[];
+  const snapshot=wallet.data.data||{};if(!snapshot.wallet)throw new Error(snapshot.errors?.[0]||'Bybit Unified wallet data is unavailable.');const account=snapshot.wallet.list?.[0]||{},coins=account.coin||[];
   const coinRows=coins.filter(x=>Number(x.walletBalance)>0).slice(0,8).map(x=>'<div class="mini-row"><span>'+esc(x.coin)+'</span><b>'+bybitFmt(x.walletBalance)+'</b></div>').join('');
   const positionCount=(snapshot.linearPositions||[]).filter(x=>Number(x.size)>0).length+(snapshot.inversePositions||[]).filter(x=>Number(x.size)>0).length+(snapshot.optionPositions||[]).filter(x=>Number(x.size)>0).length;
   const spotOrders=(snapshot.spotOpenOrders||[]).length;
