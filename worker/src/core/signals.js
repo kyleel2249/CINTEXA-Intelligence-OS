@@ -3,6 +3,7 @@ import{evaluateETIAlgoV3}from'./eti-algo.js';
 import{analyseMultiTimeframe}from'./multi-timeframe.js';
 import{analyseMarketMicrostructure}from'./market-intelligence.js';
 import{buildTradePlan}from'./trade-planner.js';
+import{analyseAdaptiveSignal}from'./adaptive-intelligence.js';
 const age=(e,last)=>e?last-(e.confirmedAt??e.index):Infinity;
 export async function evaluateTrade({candles,timeframes={},primaryTimeframe='1min',market={},risk={},now=Date.now(),maxEvidenceAgeBars=20,minimumScore=68}={}){
  if(!Array.isArray(candles)||candles.length<60)return{algorithm:'ETIAlgo V3 Alpha',decision:'NO TRADE',direction:'NEUTRAL',score:0,reasons:['At least 60 validated candles are required'],executable:false};
@@ -18,15 +19,18 @@ export async function evaluateTrade({candles,timeframes={},primaryTimeframe='1mi
  const opposing=evidence.filter(e=>(e.direction==='bullish'&&algo.direction==='SELL')||(e.direction==='bearish'&&algo.direction==='BUY'));
  const direction=algo.direction;
  const structureScore=evidence.length?Math.round(aligned.length/evidence.length*100):0;
- const score=Math.min(100,Math.round(algo.score*.55+structureScore*.15+(multiTimeframe.available?multiTimeframe.alignmentScore*.15:0)+microstructure.score*.15));
- const candidate=direction!=='NEUTRAL'&&score>=minimumScore&&evidence.length>0&&aligned.length>0&&opposing.length===0&&multiTimeframe.confirmed&&microstructure.approved&&market.dataFresh===true&&market.instrumentTradable===true;
+ const baseScore=Math.min(100,Math.round(algo.score*.55+structureScore*.15+(multiTimeframe.available?multiTimeframe.alignmentScore*.15:0)+microstructure.score*.15));
+ const adaptive=analyseAdaptiveSignal({candles,indicators:algo.indicators,baseScore,direction,multiTimeframe,microstructure,historicalOutcomes:market.historicalOutcomes||[],minimumScore});
+ const score=adaptive.adjustedScore,requiredScore=adaptive.minimumScore;
+ const candidate=direction!=='NEUTRAL'&&score>=requiredScore&&adaptive.approved&&evidence.length>0&&aligned.length>0&&opposing.length===0&&multiTimeframe.confirmed&&microstructure.approved&&market.dataFresh===true&&market.instrumentTradable===true;
  const reasons=[...algo.reasons];
  if(direction==='NEUTRAL')reasons.push('ETIAlgo engines have no qualified directional consensus');
  if(!evidence.length)reasons.push('No recent Smart Money Concepts confirmation');
  if(!multiTimeframe.available)reasons.push('Higher-timeframe market context is unavailable');else if(!multiTimeframe.confirmed)reasons.push('Higher-timeframe direction is conflicting or unconfirmed');
  if(opposing.length)reasons.push('Opposing market-structure evidence detected');
  if(!microstructure.approved)reasons.push(...microstructure.reasons);
- if(score<minimumScore)reasons.push('Signal quality is below the configured threshold');
+ if(score<requiredScore)reasons.push('Adaptive signal quality is below the current '+requiredScore+'/100 threshold');
+ reasons.push(...adaptive.reasons);
  if(market.dataFresh!==true)reasons.push('Market data is stale or unverified');
  if(market.instrumentTradable!==true)reasons.push('Instrument trading status is unverified');
  if(risk.approved!==true)reasons.push('Independent server-side risk assessment has not approved');
@@ -38,5 +42,5 @@ export async function evaluateTrade({candles,timeframes={},primaryTimeframe='1mi
  const planInput=candidate&&Number.isFinite(Number(market.accountEquity))&&Number(market.accountEquity)>0?{direction,entry:algo.entryContext.lastPrice,atr:algo.entryContext.atr,candles,equity:market.accountEquity,riskFraction:market.riskFraction??.005,leverage:market.planningLeverage??1,availableBalance:market.availableBalance??market.accountEquity,maxNotional:market.planningMaxNotional??Infinity,marginMode:market.marginMode??'ISOLATED',contractMultiplier:market.contractMultiplier??1,feeRate:market.takerFeeRate??.0006,slippageRate:market.planningSlippageRate??.0005,fundingRate:market.context?.funding?.rate??0,fundingIntervals:market.planningFundingIntervals??0}:null;
  let tradePlan=null;
  if(planInput){try{tradePlan=buildTradePlan(planInput)}catch(error){tradePlanError=error.message;reasons.push('Trade plan unavailable: '+error.message)}}
- return{algorithm:'ETIAlgo V3 Alpha',version:'3.0.0-alpha',decision,direction:candidate?direction:'NEUTRAL',candidateDirection:candidate?direction:'NEUTRAL',rawDirection:direction,score,confidenceLabel:score>=80?'HIGH':score>=minimumScore?'MODERATE':'LOW',smc,analysis:algo,multiTimeframe,microstructure,evidence,tradePlan,tradePlanError,confluence:{structureScore,aligned:aligned.length,opposing:opposing.length,total:evidence.length},risk:{approved:risk.approved===true,rewardRisk:Number(risk.rewardRisk)||null},reasons:[...new Set(reasons)],executable,expiresAt:now+60000}
+ return{algorithm:'ETIAlgo V3 Alpha',version:'3.1.0-adaptive',decision,direction:candidate?direction:'NEUTRAL',candidateDirection:candidate?direction:'NEUTRAL',rawDirection:direction,score,baseScore,requiredScore,confidenceLabel:score>=85?'HIGH':score>=requiredScore?'MODERATE':'LOW',adaptive,smc,analysis:algo,multiTimeframe,microstructure,evidence,tradePlan,tradePlanError,confluence:{structureScore,aligned:aligned.length,opposing:opposing.length,total:evidence.length},risk:{approved:risk.approved===true,rewardRisk:Number(risk.rewardRisk)||null},reasons:[...new Set(reasons)],executable,expiresAt:now+60000}
 }
