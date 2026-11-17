@@ -104,7 +104,7 @@ window.addEventListener('resize',drawBybitChart);
 refreshBybitInstruments().then(refreshBybit);setInterval(()=>{if(!document.hidden)refreshBybit()},60000);
 
 const bybitPlanCategory=$('#bybit-plan-category');
-bybitPlanCategory?.addEventListener('change',()=>{
+bybitPlanCategory?.addEventListener('change',async()=>{
  const inverse=bybitPlanCategory.value==='inverse',spot=bybitPlanCategory.value==='spot';
  if($('#bybit-category').value!==bybitPlanCategory.value){$('#bybit-category').value=bybitPlanCategory.value;await refreshBybitInstruments();refreshBybit()}
  $('#bybit-plan-contract-value').disabled=!inverse;$('#bybit-plan-contract-value').required=inverse;
