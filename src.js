@@ -68,17 +68,12 @@ async function connectBybitAccount(){
  if(!token){status.textContent='Enter the ETI exchange-read token.';return}
  status.textContent='Reading Bybit Unified account…';output.textContent='';
  try{
-  const [walletRes,linearRes,inverseRes,spotRes]=await Promise.all([
-   fetch(apiBase+'/api/bybit/account',{headers:{'x-eti-exchange-token':token}}),
-   fetch(apiBase+'/api/bybit/positions?category=linear',{headers:{'x-eti-exchange-token':token}}),
-   fetch(apiBase+'/api/bybit/positions?category=inverse',{headers:{'x-eti-exchange-token':token}}),
-   fetch(apiBase+'/api/bybit/orders?category=spot',{headers:{'x-eti-exchange-token':token}})
-  ]);
-  const [wallet,linear,inverse,spot]=await Promise.all([walletRes,linearRes,inverseRes,spotRes].map(async r=>({ok:r.ok,status:r.status,data:await readApi(r)})));
+  const walletRes=await fetch(apiBase+'/api/bybit/account',{headers:{'x-eti-exchange-token':token}});
+  const wallet={ok:walletRes.ok,status:walletRes.status,data:await readApi(walletRes)};
   if(!wallet.ok)throw new Error(wallet.data.error||'Bybit account access denied (HTTP '+wallet.status+').');
   const snapshot=wallet.data.data||{},account=snapshot.wallet?.list?.[0]||{},coins=account.coin||[];
   const coinRows=coins.filter(x=>Number(x.walletBalance)>0).slice(0,8).map(x=>'<div class="mini-row"><span>'+esc(x.coin)+'</span><b>'+bybitFmt(x.walletBalance)+'</b></div>').join('');
-  const positionCount=(snapshot.linearPositions||[]).filter(x=>Number(x.size)>0).length+(snapshot.inversePositions||[]).filter(x=>Number(x.size)>0).length;
+  const positionCount=(snapshot.linearPositions||[]).filter(x=>Number(x.size)>0).length+(snapshot.inversePositions||[]).filter(x=>Number(x.size)>0).length+(snapshot.optionPositions||[]).filter(x=>Number(x.size)>0).length;
   const spotOrders=(snapshot.spotOpenOrders||[]).length;
   const marginMode=snapshot.accountInfo?.marginMode||'Unavailable';
   const spotMargin=snapshot.spotMarginState?.spotMarginMode==='1'?'Enabled':snapshot.spotMarginState?.spotMarginMode==='0'?'Disabled':'Unavailable';
