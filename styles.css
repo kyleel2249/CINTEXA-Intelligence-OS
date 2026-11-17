@@ -30,3 +30,5 @@
 .bybit-ticker-table tbody tr{cursor:pointer}
 .bybit-ticker-table tbody tr:hover{background:#142b46}
 .bybit-ticker-table .positive{color:#4ed69a}.bybit-ticker-table .negative{color:#ff7777}
+
+.bybit-panel h4{font-size:12px;margin:14px 0 6px;color:#dce8f7}
