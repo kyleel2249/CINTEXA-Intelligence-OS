@@ -60,7 +60,7 @@ async function refreshBybit(){
 }
 async function refreshBybitInstruments(){
  const category=$('#bybit-category').value,list=$('#bybit-symbols');
- try{const res=await fetch(apiBase+'/api/bybit/market/instruments?'+new URLSearchParams({category,limit:'1000'}));if(!res.ok)throw Error('Bybit instrument catalogue unavailable');const data=await readApi(res);const rows=Array.isArray(data.list)?data.list:[];list.replaceChildren(...rows.filter(x=>x.symbol&&String(x.status||'Trading')==='Trading').map(x=>{const o=document.createElement('option');o.value=x.symbol;return o}))}
+ try{const res=await fetch(apiBase+'/api/bybit/market/instruments?'+new URLSearchParams({category,limit:'1000',all:'true',maxPages:'10'}));if(!res.ok)throw Error('Bybit instrument catalogue unavailable');const data=await readApi(res);const rows=Array.isArray(data.list)?data.list:[];list.replaceChildren(...rows.filter(x=>x.symbol&&String(x.status||'Trading')==='Trading').map(x=>{const o=document.createElement('option');o.value=x.symbol;return o}))}
  catch(e){$('#bybit-status').textContent='Bybit instrument sync failed: '+e.message}
 }
 async function connectBybitAccount(){
