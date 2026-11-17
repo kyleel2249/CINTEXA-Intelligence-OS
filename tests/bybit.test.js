@@ -70,3 +70,22 @@ test('Bybit account snapshot includes spot margin and option position reads with
  assert.ok(Array.isArray(result.errors));
  assert.ok(Array.isArray(result.optionPositions));
 });
+
+test('Bybit market context collects book, ticker, funding and open-interest history',async()=>{
+ const fetchImpl=async url=>{
+  const u=new URL(url);
+  if(u.pathname.endsWith('/orderbook'))return response({retCode:0,result:{ts:123,b:[['99','2']],a:[['101','3']]}});
+  if(u.pathname.endsWith('/tickers'))return response({retCode:0,result:{ts:123,list:[{symbol:'BTCUSDT',lastPrice:'100',bid1Price:'99',ask1Price:'101'}]}});
+  if(u.pathname.endsWith('/funding/history'))return response({retCode:0,result:{list:[{fundingRate:'0.0002',fundingRateTimestamp:'123'}]}});
+  if(u.pathname.endsWith('/open-interest'))return response({retCode:0,result:{list:[{openInterest:'500',timestamp:'123'}]}});
+  return response({retCode:0,result:{}});
+ };
+ const result=await getBybitMarketContext({category:'linear',symbol:'BTCUSDT',fetchImpl});
+ assert.equal(result.orderBook.bids[0][0],99);
+ assert.equal(result.ticker.last,100);
+ assert.equal(result.fundingHistory[0].rate,.0002);
+ assert.equal(result.openInterestHistory[0].openInterest,500);
+});
+test('Bybit options do not request unsupported standard kline data',async()=>{
+ await assert.rejects(()=>getBybitCandles({category:'option',symbol:'BTC-30DEC26-100000-C-USDT',interval:'1',fetchImpl:async()=>response({retCode:0,result:{list:[]}})}),/does not provide standard kline candles/);
+});
