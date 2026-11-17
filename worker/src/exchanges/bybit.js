@@ -90,8 +90,8 @@ export async function getBybitMarketContext({env={},category='linear',symbol,fet
  if(oi.status==='rejected')errors.push('Open-interest history unavailable');
  return{exchange:'BYBIT',category:c,symbol:s,orderBook:b,ticker:t,fundingHistory:f.map(x=>({rate:Number(x.fundingRate),fundingRateTimestamp:Number(x.fundingRateTimestamp)})),openInterestHistory:o.map(x=>({openInterest:Number(x.openInterest),timestamp:Number(x.timestamp)})),errors,timestamp:Date.now(),source:'bybit-v5-public-rest'};
 }
-export async function getBybitSpotMarginState({env}={}){
- return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/state'});
+export async function getBybitSpotMarginState({env,fetchImpl=fetch}={}){
+ return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/state',fetchImpl});
 }
 export async function getBybitSpotBorrowQuota({env,symbol,side='Buy',fetchImpl=fetch}={}){
  const s=assertSymbol(symbol),direction=String(side);if(!['Buy','Sell'].includes(direction))throw new TypeError('Spot borrow quota side must be Buy or Sell');
