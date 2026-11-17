@@ -14,6 +14,8 @@ npm run check
 npm run build:web
 ```
 
+Cloudflare Pages: build command `npm run build` (alias of `build:web`), output directory `dist`.
+
 `npm run check` syntax-checks every plain JavaScript file in the repository automatically (React Native sources under `apps/` use JSX and are skipped).
 
 The static web application expects the Worker API on the same origin by default. When the Worker is hosted separately, set `window.CINTEXA_API_BASE` in `public/config.js` (served unbundled, so it can be edited after a build and works under the strict Content-Security-Policy) to the Worker origin, and set the Worker `CORS_ORIGIN` variable to the exact site origin. `public/_headers` supplies security headers (CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) when hosted on Cloudflare Pages.
