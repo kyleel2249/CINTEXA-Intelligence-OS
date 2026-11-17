@@ -131,21 +131,23 @@ export async function getBybitExecutions({env,category='linear',symbol,limit=50,
  return bybitPrivateRequest({env,path:'/v5/execution/list',params:{category:c,symbol:symbol?assertSymbol(symbol):undefined,limit:Math.min(100,Math.max(1,Number(limit)||50)),cursor,startTime,endTime}});
 }
 export async function getBybitAccountSnapshot({env}={}){
- const [wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spotOrders,optionOrders]=await Promise.allSettled([
+ const [wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spotOrders,linearOrders,inverseOrders,optionOrders]=await Promise.allSettled([
   getBybitWalletBalance({env,accountType:'UNIFIED'}),
   getBybitAccountInfo({env}),
   getBybitCollateralInfo({env}),
   getBybitSpotMarginState({env}),
   getBybitPositions({env,category:'linear'}),
   getBybitPositions({env,category:'inverse'}),
-  getBybitPositions({env,category:'option',baseCoin:'BTC'}),
+  getBybitPositions({env,category:'option',baseCoin:'All'}),
   getBybitOpenOrders({env,category:'spot',limit:50}),
+  getBybitOpenOrders({env,category:'linear',limit:50}),
+  getBybitOpenOrders({env,category:'inverse',limit:50}),
   getBybitOpenOrders({env,category:'option',limit:50})
  ]);
  const value=x=>x.status==='fulfilled'?x.value:null;
- const errors=[wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spotOrders,optionOrders]
-  .map((x,i)=>x.status==='rejected'?['wallet','accountInfo','collateral','spotMarginState','linearPositions','inversePositions','optionPositions','spotOrders','optionOrders'][i]+': '+x.reason.message:null).filter(Boolean);
- return{exchange:'BYBIT',accountType:'UNIFIED',wallet:value(wallet),accountInfo:value(accountInfo),collateral:value(collateral)?.list||[],spotMarginState:value(spotMarginState),linearPositions:value(linear)?.list||[],inversePositions:value(inverse)?.list||[],optionPositions:value(optionPositions)?.list||[],spotOpenOrders:value(spotOrders)?.list||[],optionOpenOrders:value(optionOrders)?.list||[],errors,timestamp:Date.now(),readOnly:true};
+ const errors=[wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spotOrders,linearOrders,inverseOrders,optionOrders]
+  .map((x,i)=>x.status==='rejected'?['wallet','accountInfo','collateral','spotMarginState','linearPositions','inversePositions','optionPositions','spotOrders','linearOrders','inverseOrders','optionOrders'][i]+': '+x.reason.message:null).filter(Boolean);
+ return{exchange:'BYBIT',accountType:'UNIFIED',wallet:value(wallet),accountInfo:value(accountInfo),collateral:value(collateral)?.list||[],spotMarginState:value(spotMarginState),linearPositions:value(linear)?.list||[],inversePositions:value(inverse)?.list||[],optionPositions:value(optionPositions)?.list||[],spotOpenOrders:value(spotOrders)?.list||[],linearOpenOrders:value(linearOrders)?.list||[],inverseOpenOrders:value(inverseOrders)?.list||[],optionOpenOrders:value(optionOrders)?.list||[],errors,timestamp:Date.now(),readOnly:true};
 }
 // Deliberately locked. The V5 connector is live-market and authenticated-account capable,
 // but order placement remains unavailable until server-side risk attestation, protected-order
