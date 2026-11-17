@@ -51,6 +51,17 @@ export function detectLiquidityEvents(observations = [], { depthDropThreshold=.6
     if(depthDrop>=depthDropThreshold&&priceMove!==null&&Math.abs(priceMove)>=priceMoveThreshold){
       events.push({type:'LIQUIDITY_WITHDRAWAL_WITH_PRICE_DISLOCATION',observedAt:cur.observedAt,depthDropPercent:depthDrop*100,priceMovePercent:priceMove*100,confidence:'OBSERVATIONAL',note:'Rapid depth reduction coincided with price displacement; this is not proof of spoofing or intent.'});
     }
+    if(i>=2){
+      const a=books[i-2].data,b=books[i-1].data,nowBook=books[i].data;
+      const ia=Number(a.notionalImbalance),ib=Number(b.notionalImbalance),ic=Number(nowBook.notionalImbalance);
+      const midA=Number(a.mid),midC=Number(nowBook.mid);
+      const stableMid=finite(midA)&&midA>0&&finite(midC)&&Math.abs((midC-midA)/midA)<.0005;
+      const persistentSide=(ia>=imbalanceThreshold&&ib>=imbalanceThreshold&&ic>=imbalanceThreshold)||(ia<=-imbalanceThreshold&&ib<=-imbalanceThreshold&&ic<=-imbalanceThreshold);
+      const depthA=Number(a.bidNotional)+Number(a.askNotional),depthC=Number(nowBook.bidNotional)+Number(nowBook.askNotional);
+      if(persistentSide&&stableMid&&depthA>0&&depthC>=depthA*.8){
+        events.push({type:'POSSIBLE_LIQUIDITY_ABSORPTION',observedAt:books[i].observedAt,side:ic>0?'BID':'ASK',persistentImbalance:ic,confidence:'LOW',note:'Persistent one-sided book imbalance with limited mid-price displacement. Order-book snapshots alone cannot confirm executed aggressor flow or prove absorption.'});
+      }
+    }
     const imbalance=Number(c.notionalImbalance);
     if(Math.abs(imbalance)>=imbalanceThreshold){
       events.push({type:'ORDER_BOOK_IMBALANCE',observedAt:cur.observedAt,direction:imbalance>0?'BID':'ASK',imbalance,confidence:'OBSERVATIONAL'});
@@ -77,7 +88,7 @@ export function summarizeSignalPerformance(rows = []) {
   };
 }
 
-export function evaluateOutcomeHorizons(signal, candles, horizonsMs=[3600000,14400000,86400000]) {
+export function evaluateOutcomeHorizons(signal, candles, horizonsMs=[3600000,14400000,86400000], {barDurationMs=0}={}) {
   if(!signal||!Array.isArray(candles)) throw new TypeError('Signal and candle history are required');
   const entry=Number(signal.entry_price),start=Number(signal.entry_time_ms);
   if(!finite(entry)||entry<=0||!finite(start)||!['BUY','SELL'].includes(signal.direction)) return {status:'INVALID',results:{}};
