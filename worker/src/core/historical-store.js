@@ -30,13 +30,13 @@ export async function recordSignalAndOutcome(db,{signal,productType,symbol,timef
   return {persisted:true,signalId,outcomeId};
 }
 function finiteOrNull(v){return Number.isFinite(v)?v:null}
-export async function evaluatePendingOutcomes(db,{symbol,productType='USDT-FUTURES',candles}={}){
+export async function evaluatePendingOutcomes(db,{symbol,productType='USDT-FUTURES',candles,barDurationMs=0}={}){
   if(!db)throw new Error('D1 database binding is unavailable');
   const s=String(symbol||'').toUpperCase();if(!/^[A-Z0-9]{2,30}$/.test(s)||!Array.isArray(candles))throw new TypeError('Symbol and candle array are required');
   const rows=await db.prepare("SELECT * FROM signal_outcomes WHERE symbol=? AND product_type=? AND status IN ('PENDING','PARTIAL') ORDER BY entry_time_ms ASC LIMIT 500").bind(s,productType).all();
   let updated=0;
   for(const row of rows.results||[]){
-    const outcome=evaluateOutcomeHorizons(row,candles);
+    const outcome=evaluateOutcomeHorizons(row,candles,[3600000,14400000,86400000],{barDurationMs});
     if(outcome.status==='INVALID')continue;
     if(outcome.status!==row.status||JSON.stringify(outcome.results)!==row.horizon_results_json){
       await db.prepare('UPDATE signal_outcomes SET status=?,horizon_results_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(outcome.status,JSON.stringify(outcome.results),row.id).run();updated++;
