@@ -35,9 +35,14 @@ async function refreshBybit(){
  status.textContent='Refreshing Bybit V5 market data…';
  try{
   const q=new URLSearchParams({category,symbol});
-  const universeQuery=new URLSearchParams({category,...(category==='option'?{baseCoin:'All'}:{})});\n  const [tickerRes,contextRes,universeRes]=await Promise.all([fetch(apiBase+'/api/bybit/market/ticker?'+q),fetch(apiBase+'/api/bybit/market/context?'+q),fetch(apiBase+'/api/bybit/market/tickers?'+universeQuery)]);
+  const universeQuery=new URLSearchParams({category,...(category==='option'?{baseCoin:'All'}:{})});
+  const [tickerRes,contextRes,universeRes]=await Promise.all([fetch(apiBase+'/api/bybit/market/ticker?'+q),fetch(apiBase+'/api/bybit/market/context?'+q),fetch(apiBase+'/api/bybit/market/tickers?'+universeQuery)]);
   if(!tickerRes.ok)throw new Error('Bybit ticker unavailable (HTTP '+tickerRes.status+').');
-  const ticker=await readApi(tickerRes),context=contextRes.ok?await readApi(contextRes):null,universe=universeRes.ok?await readApi(universeRes):{tickers:[]};\n  const rows=(universe.tickers||[]).slice().sort((a,b)=>(Number(b.turnover24h)||0)-(Number(a.turnover24h)||0));\n  $('#bybit-universe-count').textContent=rows.length+' pairs · refreshed '+new Date().toLocaleTimeString();\n  $('#bybit-ticker-rows').innerHTML=rows.slice(0,15).map(x=>'<tr data-symbol=\"'+esc(x.symbol)+'\"><td>'+esc(x.symbol)+'</td><td>'+bybitFmt(x.last)+'</td><td class=\"'+(x.price24hPcnt>=0?'positive':'negative')+'\">'+(Number.isFinite(x.price24hPcnt)?(x.price24hPcnt*100).toFixed(2)+'%':'—')+'</td><td>'+bybitFmt(x.turnover24h)+'</td></tr>').join('')||'<tr><td colspan=\"4\">No tickers returned.</td></tr>';\n  $('#bybit-ticker-rows').querySelectorAll('tr[data-symbol]').forEach(row=>row.addEventListener('click',()=>{$('#bybit-symbol').value=row.dataset.symbol;refreshBybit()}));
+  const ticker=await readApi(tickerRes),context=contextRes.ok?await readApi(contextRes):null,universe=universeRes.ok?await readApi(universeRes):{tickers:[]};
+  const rows=(universe.tickers||[]).slice().sort((a,b)=>(Number(b.turnover24h)||0)-(Number(a.turnover24h)||0));
+  $('#bybit-universe-count').textContent=rows.length+' pairs · refreshed '+new Date().toLocaleTimeString();
+  $('#bybit-ticker-rows').innerHTML=rows.slice(0,15).map(x=>'<tr data-symbol=\"'+esc(x.symbol)+'\"><td>'+esc(x.symbol)+'</td><td>'+bybitFmt(x.last)+'</td><td class=\"'+(x.price24hPcnt>=0?'positive':'negative')+'\">'+(Number.isFinite(x.price24hPcnt)?(x.price24hPcnt*100).toFixed(2)+'%':'—')+'</td><td>'+bybitFmt(x.turnover24h)+'</td></tr>').join('')||'<tr><td colspan=\"4\">No tickers returned.</td></tr>';
+  $('#bybit-ticker-rows').querySelectorAll('tr[data-symbol]').forEach(row=>row.addEventListener('click',()=>{$('#bybit-symbol').value=row.dataset.symbol;refreshBybit()}));
   $('#bybit-price').textContent=bybitFmt(ticker.last);$('#bybit-high').textContent=bybitFmt(ticker.high24h);$('#bybit-low').textContent=bybitFmt(ticker.low24h);$('#bybit-volume').textContent=bybitFmt(ticker.turnover24h);
   bybitCandles=[];
   if(category!=='option'){
