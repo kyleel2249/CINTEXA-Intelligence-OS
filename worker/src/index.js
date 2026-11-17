@@ -134,6 +134,55 @@ async function handleSignals(req, env) {
   }, 200, env);
 }
 
+const BYBIT_INTERVALS=[['1','1min',60000],['5','5min',300000],['15','15min',900000],['60','1H',3600000],['240','4H',14400000],['D','1D',86400000],['W','1W',604800000]];
+async function handleBybitSignals(req,env){
+ rateLimit(req,env,{scope:'bybit-signals'});
+ const body=await readJson(req),category=String(body.category||'linear').toLowerCase(),symbol=String(body.symbol||'').toUpperCase(),interval=String(body.interval||'1');
+ if(!['spot','linear','inverse'].includes(category))throw new TypeError('ETI signal analysis supports Bybit spot, linear and inverse markets; options remain market-data only');
+ const primary=BYBIT_INTERVALS.find(x=>x[0]===interval);if(!primary)throw new TypeError('Unsupported Bybit signal interval');
+ const other=BYBIT_INTERVALS.filter(x=>x[0]!==interval);
+ const [candles,settled,instruments,contextResult]=await Promise.all([
+  getBybitCandles({env,category,symbol,interval,limit:200}),
+  Promise.allSettled(other.map(async x=>[x[1],await getBybitCandles({env,category,symbol,interval:x[0],limit:x[0]==='5'?400:200})])),
+  getBybitInstruments({env,category,symbol,limit:1000}).catch(()=>null),
+  getBybitMarketContext({env,category,symbol}).then(data=>({data})).catch(error=>({error:error.message}))
+ ]);
+ const timeframeRows=settled.filter(x=>x.status==='fulfilled').map(x=>x.value);
+ const timeframes=Object.fromEntries([[primary[1],candles],...timeframeRows]);
+ const unavailableTimeframes=other.filter(x=>!timeframeRows.some(y=>y[0]===x[1])).map(x=>x[1]);
+ const instrument=instruments?.list?.find(x=>String(x.symbol).toUpperCase()===symbol);
+ const fresh=Boolean(candles.at(-1)&&Date.now()-candles.at(-1).time<=2*primary[2]);
+ const rawContext=contextResult.data;let marketContext=null,contextError=contextResult.error||null;
+ if(rawContext?.orderBook){
+  try{
+   const book=analyseOrderBook(rawContext.orderBook,{lastPrice:rawContext.ticker?.last});
+   const fr=rawContext.fundingHistory?.[0],oi=rawContext.openInterestHistory?.[0];
+   marketContext={exchange:'BYBIT',productType:category==='spot'?'SPOT':category.toUpperCase(),orderBook:book,
+    funding:fr&&Number.isFinite(fr.rate)?{rate:fr.rate,timestamp:fr.fundingRateTimestamp}:null,
+    openInterest:oi&&Number.isFinite(oi.openInterest)?{size:oi.openInterest,timestamp:oi.timestamp}:null,
+    optionalErrors:rawContext.errors||[],timestamp:Date.now()};
+  }catch(error){contextError=error.message}
+ }
+ const instrumentTradable=String(instrument?.status||'').toLowerCase()==='trading';
+ const outcomeProduct='BYBIT-'+category.toUpperCase();
+ let historicalOutcomes=[];
+ if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType:outcomeProduct,limit:1500})).items||[]}catch(error){console.error('[bybit-calibration]',error?.message||error)}
+ const result=await evaluateTrade({candles,timeframes,primaryTimeframe:primary[1],market:{dataFresh:fresh,instrumentTradable,source:'BYBIT',context:marketContext,historicalOutcomes},risk:{approved:false}});
+ let historyWrite={stored:0,errors:['Instrument not confirmed in Bybit catalogue; nothing persisted']};
+ let signalWrite={persisted:false,reason:'D1 binding unavailable or instrument unconfirmed'},outcomeWrite={updated:0};
+ if(instrument){
+  const observationProduct=category==='spot'?'SPOT':category.toUpperCase();
+  historyWrite=await saveSignalMarketContext(env,{context:marketContext,ticker:rawContext?.ticker,productType:observationProduct,symbol,exchange:'BYBIT'});
+  if(env.DB)try{
+   signalWrite=await recordSignalAndOutcome(env.DB,{signal:result,productType:outcomeProduct,symbol,timeframe:primary[1]});
+   if(timeframes['5min'])outcomeWrite=await evaluatePendingOutcomes(env.DB,{symbol,productType:outcomeProduct,candles:timeframes['5min'],barDurationMs:300000});
+  }catch(error){signalWrite={...signalWrite,reason:error.message}}
+ }
+ return json({...result,history:{marketObservations:historyWrite,signal:signalWrite,outcomes:outcomeWrite},
+  market:{exchange:'BYBIT',category,symbol,interval,granularity:primary[1],lastCandleTime:candles.at(-1)?.time??null,dataFresh:fresh,instrumentTradable,contextAvailable:Boolean(marketContext),contextError,unavailableTimeframes},
+  executionAllowed:false,executionBlock:'Bybit account and market integration is active; live order routing remains hard-disabled pending full ETI execution safety verification.'},200,env);
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -163,7 +212,7 @@ export default {
         const candles = await getBitgetCandles({ productType, symbol, granularity, limit });
         return json({ exchange: 'BITGET', productType, symbol, granularity, candles }, 200, env);
       }
-      if (u.pathname === '/api/bybit/market/instruments' && req.method === 'GET') {
+      if (u.pathname === '/api/bybit/signals' && req.method === 'POST') return await handleBybitSignals(req,env);\n      if (u.pathname === '/api/bybit/market/instruments' && req.method === 'GET') {
         const category=u.searchParams.get('category')||'linear',symbol=u.searchParams.get('symbol')||undefined,baseCoin=u.searchParams.get('baseCoin')||undefined;
         return json({exchange:'BYBIT',category,...await getBybitInstruments({env,category,symbol,baseCoin,limit:u.searchParams.get('limit')||1000,cursor:u.searchParams.get('cursor')||undefined})},200,env);
       }
