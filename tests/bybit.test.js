@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bybitPublicRequest, bybitPrivateRequest, getBybitInstruments, getBybitInstrumentCatalog, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitSpotMarginState, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitPositions, getBybitAccountSnapshot, submitBybitLiveOrder } from '../worker/src/exchanges/bybit.js';
+import { bybitPublicRequest, bybitPrivateRequest, getBybitInstruments, getBybitInstrumentCatalog, getBybitTickers, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitSpotMarginState, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitPositions, getBybitAccountSnapshot, submitBybitLiveOrder } from '../worker/src/exchanges/bybit.js';
 const response=(payload,status=200)=>new Response(JSON.stringify(payload),{status,headers:{'content-type':'application/json'}});
 test('Bybit V5 public request sorts query parameters and selects the live base by default',async()=>{
  let called='';
@@ -100,4 +100,14 @@ test('Bybit instrument catalogue follows pagination cursors and returns the comp
  assert.equal(page,2);
  assert.deepEqual(result.list.map(x=>x.symbol),['BTCUSDT','ETHUSDT']);
  assert.equal(result.complete,true);
+});
+
+test('Bybit category ticker endpoint returns all available symbols in one snapshot',async()=>{
+ let called='';
+ const rows=[{symbol:'BTCUSDT',lastPrice:'100',turnover24h:'1000'},{symbol:'ETHUSDT',lastPrice:'50',turnover24h:'500'}];
+ const result=await getBybitTickers({category:'linear',fetchImpl:async url=>{called=String(url);return response({retCode:0,result:{ts:100,list:rows}})}});
+ assert.ok(called.includes('category=linear'));
+ assert.equal(result.length,2);
+ assert.equal(result[0].symbol,'BTCUSDT');
+ assert.equal(result[1].last,50);
 });
