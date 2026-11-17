@@ -35,3 +35,14 @@ test('rejects unsupported inverse and options trade plans instead of mis-sizing 
 test('rejects leverage above Bybit instrument maximum',()=>{
  assert.throws(()=>buildBybitTradePlan({input:{...base,category:'linear',leverage:150},instrument:linear}),/outside permitted bounds|exchange maximum/);
 });
+
+test('builds inverse futures plans with explicit USD contract value and inverse payoff math',()=>{
+ const inverse={symbol:'BTCUSD',status:'Trading',lotSizeFilter:{qtyStep:'1',minOrderQty:'1',minNotionalValue:'1'},priceFilter:{tickSize:'0.5'},leverageFilter:{maxLeverage:'100'}};
+ const result=buildBybitTradePlan({input:{...base,symbol:'BTCUSD',category:'inverse',entry:100000,atr:1000,contractValue:1,leverage:10,marginMode:'CROSS'},instrument:inverse});
+ assert.equal(result.category,'inverse');
+ assert.ok(result.plan.quantity>=1);
+ assert.equal(result.plan.notional,result.plan.quantity);
+ assert.equal(result.plan.contractValue,1);
+ assert.equal(result.orderPreview.category,'inverse');
+ assert.equal(result.executionAllowed,false);
+});
