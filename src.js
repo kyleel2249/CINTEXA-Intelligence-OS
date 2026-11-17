@@ -76,7 +76,7 @@ async function connectBybitAccount(){
   ]);
   const [wallet,linear,inverse,spot]=await Promise.all([walletRes,linearRes,inverseRes,spotRes].map(async r=>({ok:r.ok,status:r.status,data:await readApi(r)})));
   if(!wallet.ok)throw new Error(wallet.data.error||'Bybit account access denied (HTTP '+wallet.status+').');
-  const account=wallet.data.data?.list?.[0]||{},coins=account.coin||[];
+  const snapshot=wallet.data.data||{},account=snapshot.wallet?.list?.[0]||{},coins=account.coin||[];
   const coinRows=coins.filter(x=>Number(x.walletBalance)>0).slice(0,8).map(x=>'<div class="mini-row"><span>'+esc(x.coin)+'</span><b>'+bybitFmt(x.walletBalance)+'</b></div>').join('');
   const positionCount=(linear.data?.list||[]).filter(x=>Number(x.size)>0).length+(inverse.data?.list||[]).filter(x=>Number(x.size)>0).length;
   const spotOrders=(spot.data?.list||[]).length;
