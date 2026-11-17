@@ -220,7 +220,7 @@ export default {
       }
       if (u.pathname === '/api/bybit/signals' && req.method === 'POST') return await handleBybitSignals(req,env);
       if (u.pathname === '/api/bybit/market/instruments' && req.method === 'GET') {
-        const category=u.searchParams.get('category')||'linear',symbol=u.searchParams.get('symbol')||undefined,baseCoin=u.searchParams.get('baseCoin')||undefined;
+        const category=u.searchParams.get('category')||'linear',symbol=u.searchParams.get('symbol')||undefined,baseCoin=u.searchParams.get('baseCoin')||(category==='option'?'All':undefined);
         const data=u.searchParams.get('all')==='true'?await getBybitInstrumentCatalog({env,category,baseCoin,limit:u.searchParams.get('limit')||1000,maxPages:u.searchParams.get('maxPages')||10}):await getBybitInstruments({env,category,symbol,baseCoin,limit:u.searchParams.get('limit')||1000,cursor:u.searchParams.get('cursor')||undefined});
         return json({exchange:'BYBIT',category,...data},200,env);
       }
