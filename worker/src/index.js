@@ -5,7 +5,7 @@ import { getBitgetInstruments, getBitgetTicker, getBitgetCandles, getBitgetMarke
 import { getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
 import { persistMarketObservation, readMarketHistory, recordSignalAndOutcome, evaluatePendingOutcomes, readSignalPerformance } from './core/historical-store.js';
 
-const PRODUCT_TYPES = new Set(['SPOT', 'MARGIN', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES']);
+const PRODUCT_TYPES = new Set(['SPOT', 'MARGIN', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES', 'LINEAR', 'INVERSE', 'OPTION', 'BYBIT-SPOT', 'BYBIT-LINEAR', 'BYBIT-INVERSE']);
 const MULTI_GRANULARITIES = ['1min', '5min', '15min', '1H', '4H', '1D', '1W'];
 const granularityMs = { '1min':60000,'3min':180000,'5min':300000,'15min':900000,'30min':1800000,'1H':3600000,'2H':7200000,'4H':14400000,'6H':21600000,'12H':43200000,'1D':86400000,'3D':259200000,'1W':604800000,'1M':2592000000 };
 const OBSERVATION_BUCKET_MS = 60000;
@@ -53,7 +53,7 @@ async function readJson(req) {
 
 function assertProductType(value) {
   const productType = String(value || 'USDT-FUTURES').toUpperCase();
-  if (!PRODUCT_TYPES.has(productType)) throw new TypeError('Unsupported Bitget product type');
+  if (!PRODUCT_TYPES.has(productType)) throw new TypeError('Unsupported exchange product type');
   return productType;
 }
 
