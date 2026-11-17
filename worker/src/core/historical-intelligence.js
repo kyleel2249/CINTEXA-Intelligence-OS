@@ -9,7 +9,7 @@ export function validateMarketObservation(input = {}) {
   const observedAt = Number(input.observedAt);
   if (!types.has(observationType)) throw new TypeError('Unsupported observation type');
   if (!/^[A-Z0-9]{2,30}$/.test(symbol)) throw new TypeError('Invalid market symbol');
-  if (!['SPOT','MARGIN','USDT-FUTURES','USDC-FUTURES','COIN-FUTURES'].includes(productType)) throw new TypeError('Unsupported product type');
+  if (!['SPOT','MARGIN','USDT-FUTURES','USDC-FUTURES','COIN-FUTURES','LINEAR','INVERSE','OPTION'].includes(productType)) throw new TypeError('Unsupported product type');
   if (!finite(observedAt) || observedAt <= 0 || observedAt > Date.now() + 60000) throw new TypeError('Observation timestamp is invalid or in the future');
   if (!input.data || typeof input.data !== 'object' || Array.isArray(input.data)) throw new TypeError('Observation data must be an object');
   const d = input.data;
