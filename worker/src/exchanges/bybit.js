@@ -42,15 +42,19 @@ export async function getBybitInstruments({env={},category='linear',symbol,baseC
 export async function getBybitInstrumentCatalog({env={},category='linear',baseCoin,limit=1000,maxPages=10,fetchImpl=fetch}={}){
  const c=assertCategory(category),pageSize=c==='spot'?undefined:Math.min(1000,Math.max(1,Number(limit)||1000));
  if(c==='spot')return getBybitInstruments({env,category:c,fetchImpl});
- const list=[],seen=new Set();let cursor,hasMore=true,pages=0;
- while(hasMore&&pages<Math.min(20,Math.max(1,maxPages))){
+ const list=[],seen=new Set();let cursor,nextCursor='',hasMore=false,pages=0;
+ const pageLimit=Math.min(20,Math.max(1,Math.floor(Number(maxPages)||10)));
+ while(pages<pageLimit){
   const page=await getBybitInstruments({env,category:c,baseCoin,limit:pageSize,cursor,fetchImpl});
   if(Array.isArray(page.list))list.push(...page.list);
+  pages++;
   const next=String(page.nextPageCursor||'');
   if(!next||seen.has(next)){hasMore=false;break}
-  seen.add(next);cursor=next;pages++;
+  seen.add(next);
+  if(pages>=pageLimit){hasMore=true;nextCursor=next;break}
+  cursor=next;
  }
- return{category:c,list,nextPageCursor:hasMore?cursor:'',pages,complete:!hasMore};
+ return{category:c,list,nextPageCursor:hasMore?nextCursor:'',pages,complete:!hasMore};
 }
 export async function getBybitTicker({env={},category='linear',symbol,fetchImpl=fetch}={}){
  const c=assertCategory(category),s=assertSymbol(symbol);
