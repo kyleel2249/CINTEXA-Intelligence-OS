@@ -196,7 +196,7 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(env) });
     try {
       if (u.pathname === '/api/health') return json({
-        status: 'ok', service: 'CINTEXA Intelligence OS', execution: 'LIVE_ORDER_ROUTING_LOCKED', marketData: ['BITGET_PUBLIC_REST','BYBIT_V5_REST'], bybitConfigured: Boolean(env.BYBIT_API_KEY&&env.BYBIT_API_SECRET),
+        status: 'ok', service: 'CINTEXA Intelligence OS', execution: 'LIVE_ORDER_ROUTING_LOCKED', marketData: ['BITGET_PUBLIC_REST','BYBIT_V5_REST'], bybitConfigured: Boolean(env.BYBIT_API_KEY&&env.BYBIT_API_SECRET), bybitTestnet:env.BYBIT_TESTNET==='true', bybitExecutionEnabled:false, adaptiveSignals:true,
         historicalIntelligence: Boolean(env.DB), liveEnabled: false,
         liveBlock: 'Live order routing remains hard-disabled until verified server-side risk, protective orders, idempotency and reconciliation are implemented.'
       }, 200, env);
