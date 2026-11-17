@@ -98,6 +98,7 @@ export default {
         return json(await readMarketHistory(env.DB,{symbol:u.searchParams.get('symbol'),productType:u.searchParams.get('productType')||'USDT-FUTURES',hours:u.searchParams.get('hours')||24,limit:u.searchParams.get('limit')||1000}),200,env);
       }
       if (u.pathname === '/api/eti/outcomes/evaluate' && req.method === 'POST') {
+        if (!env.ETI_INGESTION_TOKEN || req.headers.get('x-eti-ingestion-token') !== env.ETI_INGESTION_TOKEN) return json({error:'Unauthorised outcome evaluation'},401,env);
         if (!env.DB) return json({error:'D1 database binding is unavailable'},503,env);
         const body=await req.json();
         return json(await evaluatePendingOutcomes(env.DB,body),200,env);
