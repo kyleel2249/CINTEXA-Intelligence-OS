@@ -228,6 +228,7 @@ export default {
       }
       if (u.pathname === '/api/bybit/account' && req.method === 'GET') {
         await requireExchangeReadToken(req,env);
+        if(!env.BYBIT_API_KEY||!env.BYBIT_API_SECRET)throw new HttpError(503,'Bybit API credentials are not configured in Worker secrets');
         return json({exchange:'BYBIT',accountType:u.searchParams.get('accountType')||'UNIFIED',data:await getBybitAccountSnapshot({env}),readOnly:true},200,env);
       }
       if (u.pathname === '/api/bybit/positions' && req.method === 'GET') {
