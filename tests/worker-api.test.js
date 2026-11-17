@@ -181,3 +181,11 @@ test('responses carry hardening headers', async () => {
   const data = await response.json();
   assert.equal(data.liveEnabled, false);
 });
+
+test('Pages Function serves the API from the same origin', async () => {
+  const { onRequest } = await import('../functions/api/[[path]].js');
+  const response = await onRequest({ request: new Request('https://site.test/api/health', { headers: { 'cf-connecting-ip': uniqueIp() } }), env: {} });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).status, 'ok');
+  assert.match(response.headers.get('content-type'), /json/);
+});

@@ -1,4 +1,5 @@
 const apiBase=String(window.CINTEXA_API_BASE||'').replace(/\/$/,'');
+async function readApi(res){const t=res.headers.get('content-type')||'';if(!t.includes('json'))throw new Error('CINTEXA API is not reachable from this site (received a web page instead of data). Deploy the API (Pages Function or Worker) or set CINTEXA_API_BASE in config.js.');return res.json()}
 const style=document.createElement('style');
 style.textContent=`
 .historical-panel{margin-top:22px;background:#0c1b31;border:1px solid #1b3553;border-radius:16px;padding:20px;color:#e8f1ff}
@@ -44,7 +45,7 @@ function initHistoricalPanel(){
     fetch(apiBase+'/api/eti/history?'+new URLSearchParams({symbol,productType,hours:'24',limit:'1500'})),
     fetch(apiBase+'/api/eti/performance?'+new URLSearchParams({symbol,productType,limit:'1500'}))
    ]);
-   const [history,performance]=await Promise.all([historyRes.json(),performanceRes.json()]);
+   const [history,performance]=await Promise.all([readApi(historyRes),readApi(performanceRes)]);
    if(!historyRes.ok)throw new Error(history.error||'Historical data service unavailable');
    if(!performanceRes.ok)throw new Error(performance.error||'Signal performance service unavailable');
    const summary=performance.summary||{},four=performance.byHorizon?.['4h']||{};

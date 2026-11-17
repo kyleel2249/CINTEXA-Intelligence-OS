@@ -20,6 +20,10 @@ Cloudflare Pages: build command `npm run build` (alias of `build:web`), output d
 
 The static web application expects the Worker API on the same origin by default. When the Worker is hosted separately, set `window.CINTEXA_API_BASE` in `public/config.js` (served unbundled, so it can be edited after a build and works under the strict Content-Security-Policy) to the Worker origin, and set the Worker `CORS_ORIGIN` variable to the exact site origin. `public/_headers` supplies security headers (CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) when hosted on Cloudflare Pages.
 
+## Hosting the API on Cloudflare Pages
+
+`functions/api/[[path]].js` is a Pages Function that serves every `/api/*` route from the same origin as the site using the Worker code, so no separate Worker or `CINTEXA_API_BASE` is needed. Public Bitget market data works immediately. For historical intelligence, bind the D1 database as `DB` and add the secrets in Pages > Settings > Functions, then apply the migrations in `worker/migrations`. If the API is not reachable the UI says so instead of showing a JSON parse error.
+
 ## Worker configuration
 
 Copy `.env.example` to `worker/.dev.vars` for local development (git-ignored) and use `wrangler secret put` in production.
