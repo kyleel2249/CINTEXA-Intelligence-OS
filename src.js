@@ -78,9 +78,13 @@ async function connectBybitAccount(){
   if(!wallet.ok)throw new Error(wallet.data.error||'Bybit account access denied (HTTP '+wallet.status+').');
   const snapshot=wallet.data.data||{},account=snapshot.wallet?.list?.[0]||{},coins=account.coin||[];
   const coinRows=coins.filter(x=>Number(x.walletBalance)>0).slice(0,8).map(x=>'<div class="mini-row"><span>'+esc(x.coin)+'</span><b>'+bybitFmt(x.walletBalance)+'</b></div>').join('');
-  const positionCount=(linear.data?.list||[]).filter(x=>Number(x.size)>0).length+(inverse.data?.list||[]).filter(x=>Number(x.size)>0).length;
-  const spotOrders=(spot.data?.list||[]).length;
-  output.innerHTML='<div class="mini-row"><span>Total equity</span><b>'+bybitFmt(account.totalEquity)+'</b></div><div class="mini-row"><span>Wallet balance</span><b>'+bybitFmt(account.totalWalletBalance)+'</b></div><div class="mini-row"><span>Available balance</span><b>'+bybitFmt(account.totalAvailableBalance)+'</b></div>'+coinRows+'<div class="mini-row"><span>Open derivative positions</span><b>'+positionCount+'</b></div><div class="mini-row"><span>Open spot orders</span><b>'+spotOrders+'</b></div>';
+  const positionCount=(snapshot.linearPositions||[]).filter(x=>Number(x.size)>0).length+(snapshot.inversePositions||[]).filter(x=>Number(x.size)>0).length;
+  const spotOrders=(snapshot.spotOpenOrders||[]).length;
+  const marginMode=snapshot.accountInfo?.marginMode||'Unavailable';
+  const spotMargin=snapshot.spotMarginState?.spotMarginMode==='1'?'Enabled':snapshot.spotMarginState?.spotMarginMode==='0'?'Disabled':'Unavailable';
+  const spotLeverage=snapshot.spotMarginState?.spotLeverage||'—';
+  const collateral=(snapshot.collateral||[]).filter(x=>Number(x.maxBorrowingAmount)>0).length;
+  output.innerHTML='<div class="mini-row"><span>Total equity</span><b>'+bybitFmt(account.totalEquity)+'</b></div><div class="mini-row"><span>Wallet balance</span><b>'+bybitFmt(account.totalWalletBalance)+'</b></div><div class="mini-row"><span>Available balance</span><b>'+bybitFmt(account.totalAvailableBalance)+'</b></div>'+coinRows+'<div class="mini-row"><span>Open derivative positions</span><b>'+positionCount+'</b></div><div class="mini-row"><span>Open spot orders</span><b>'+spotOrders+'</b></div><div class="mini-row"><span>Account margin mode</span><b>'+esc(marginMode)+'</b></div><div class="mini-row"><span>Spot margin</span><b>'+spotMargin+' · '+esc(spotLeverage)+'x</b></div><div class="mini-row"><span>Collateral assets</span><b>'+collateral+'</b></div><div class="mini-row"><span>Account sync errors</span><b>'+(snapshot.errors||[]).length+'</b></div>';
   status.textContent='Bybit Unified account connected · Read-only snapshot · '+new Date().toLocaleTimeString();
  }catch(error){status.textContent=error.message;output.textContent='Account data was not loaded.'}
 }
