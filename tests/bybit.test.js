@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bybitPublicRequest, bybitPrivateRequest, getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, submitBybitLiveOrder } from '../worker/src/exchanges/bybit.js';
+import { bybitPublicRequest, bybitPrivateRequest, getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitSpotMarginState, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitPositions, getBybitAccountSnapshot, submitBybitLiveOrder } from '../worker/src/exchanges/bybit.js';
 const response=(payload,status=200)=>new Response(JSON.stringify(payload),{status,headers:{'content-type':'application/json'}});
 test('Bybit V5 public request sorts query parameters and selects the live base by default',async()=>{
  let called='';
@@ -38,4 +38,35 @@ test('Bybit V5 non-zero return codes fail closed',async()=>{
 });
 test('Bybit order routing remains hard-disabled',async()=>{
  await assert.rejects(()=>submitBybitLiveOrder({env:{BYBIT_LIVE_ENABLED:'true'},order:{}}),/hard-disabled/);
+});
+
+test('Bybit Spot Margin state uses the documented read-only endpoint',async()=>{
+ let called='';
+ const result=await getBybitSpotMarginState({env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'},fetchImpl:async url=>{called=String(url);return response({retCode:0,result:{spotMarginMode:'1',spotLeverage:'5',effectiveLeverage:'1.2'}})}});
+ assert.ok(called.endsWith('/v5/spot-margin-trade/state'));
+ assert.equal(result.spotMarginMode,'1');
+ assert.equal(result.spotLeverage,'5');
+});
+test('Bybit Spot borrow quota validates Buy and Sell sides',async()=>{
+ let called='';
+ const result=await getBybitSpotBorrowQuota({env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'},symbol:'BTCUSDT',side:'Buy',fetchImpl:async url=>{called=String(url);return response({retCode:0,result:{maxTradeQty:'1'}})}});
+ assert.ok(called.includes('/v5/order/spot-borrow-check?'));
+ assert.ok(called.includes('side=Buy'));
+ assert.equal(result.maxTradeQty,'1');
+ await assert.rejects(()=>getBybitSpotBorrowQuota({env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'},symbol:'BTCUSDT',side:'Hold',fetchImpl:async()=>response({retCode:0,result:{}})}),/Buy or Sell/);
+});
+test('Bybit Spot maximum borrowable endpoint requires a currency',async()=>{
+ await assert.rejects(()=>getBybitSpotMaxBorrowable({env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'}}),/currency is required/);
+});
+test('Bybit positions allow options but reject spot positions',async()=>{
+ let called='';
+ await getBybitPositions({env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'},category:'option',baseCoin:'BTC',fetchImpl:async url=>{called=String(url);return response({retCode:0,result:{list:[]}})}});
+ assert.ok(called.includes('category=option'));
+ await assert.rejects(()=>getBybitPositions({env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'},category:'spot'}),/Spot balances/);
+});
+test('Bybit account snapshot includes spot margin and option position reads without failing partial account permissions',async()=>{
+ const result=await getBybitAccountSnapshot({env:{}});
+ assert.equal(result.readOnly,true);
+ assert.ok(Array.isArray(result.errors));
+ assert.ok(Array.isArray(result.optionPositions));
 });
