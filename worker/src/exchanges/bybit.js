@@ -39,6 +39,19 @@ export async function getBybitInstruments({env={},category='linear',symbol,baseC
  const c=assertCategory(category),s=symbol?assertSymbol(symbol):undefined;
  return bybitPublicRequest({env,path:'/v5/market/instruments-info',params:{category:c,symbol:s,baseCoin,limit:c==='spot'?undefined:Math.min(1000,Math.max(1,Number(limit)||1000)),cursor},fetchImpl});
 }
+export async function getBybitInstrumentCatalog({env={},category='linear',baseCoin,limit=1000,maxPages=10,fetchImpl=fetch}={}){
+ const c=assertCategory(category),pageSize=c==='spot'?undefined:Math.min(1000,Math.max(1,Number(limit)||1000));
+ if(c==='spot')return getBybitInstruments({env,category:c,fetchImpl});
+ const list=[],seen=new Set();let cursor,hasMore=true,pages=0;
+ while(hasMore&&pages<Math.min(20,Math.max(1,maxPages))){
+  const page=await getBybitInstruments({env,category:c,baseCoin,limit:pageSize,cursor,fetchImpl});
+  if(Array.isArray(page.list))list.push(...page.list);
+  const next=String(page.nextPageCursor||'');
+  if(!next||seen.has(next)){hasMore=false;break}
+  seen.add(next);cursor=next;pages++;
+ }
+ return{category:c,list,nextPageCursor:hasMore?cursor:'',pages,complete:!hasMore};
+}
 export async function getBybitTicker({env={},category='linear',symbol,fetchImpl=fetch}={}){
  const c=assertCategory(category),s=assertSymbol(symbol);
  const result=await bybitPublicRequest({env,path:'/v5/market/tickers',params:{category:c,symbol:s},fetchImpl});
