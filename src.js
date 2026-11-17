@@ -96,7 +96,7 @@ async function connectBybitAccount(){
  }catch(error){status.textContent=error.message;output.textContent='Account data was not loaded.'}
 }
 $('#bybit-refresh')?.addEventListener('click',refreshBybit);
-$('#bybit-category')?.addEventListener('change',async()=>{await refreshBybitInstruments();refreshBybit()});
+$('#bybit-category')?.addEventListener('change',async()=>{const category=$('#bybit-category').value;if(['spot','linear','inverse'].includes(category))bybitPlanCategory.value=category;else $('#bybit-plan-output').textContent='Options order planning is withheld until a premium-and-Greeks risk model is available.';await refreshBybitInstruments();refreshBybit()});
 $('#bybit-symbol')?.addEventListener('keydown',e=>{if(e.key==='Enter')refreshBybit()});
 $('#bybit-interval')?.addEventListener('change',refreshBybit);
 $('#bybit-account-connect')?.addEventListener('click',connectBybitAccount);
@@ -105,7 +105,7 @@ refreshBybitInstruments().then(refreshBybit);setInterval(()=>{if(!document.hidde
 
 const bybitPlanCategory=$('#bybit-plan-category');
 bybitPlanCategory?.addEventListener('change',()=>{
- const inverse=bybitPlanCategory.value==='inverse',spot=bybitPlanCategory.value==='spot';
+ const inverse=bybitPlanCategory.value==='inverse',spot=bybitPlanCategory.value==='spot';\n if($('#bybit-category').value!==bybitPlanCategory.value){$('#bybit-category').value=bybitPlanCategory.value;await refreshBybitInstruments();refreshBybit()}
  $('#bybit-plan-contract-value').disabled=!inverse;$('#bybit-plan-contract-value').required=inverse;
  $('#bybit-plan-margin').disabled=spot;
  $('#bybit-plan-use-margin').disabled=!spot;
