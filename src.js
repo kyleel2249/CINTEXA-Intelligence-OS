@@ -65,8 +65,14 @@ async function refreshBybit(){
 }
 async function refreshBybitInstruments(){
  const category=$('#bybit-category').value,list=$('#bybit-symbols');
- try{const res=await fetch(apiBase+'/api/bybit/market/instruments?'+new URLSearchParams({category,limit:'1000',all:'true',maxPages:'10'}));if(!res.ok)throw Error('Bybit instrument catalogue unavailable');const data=await readApi(res);const rows=Array.isArray(data.list)?data.list:[];list.replaceChildren(...rows.filter(x=>x.symbol&&String(x.status||'Trading')==='Trading').map(x=>{const o=document.createElement('option');o.value=x.symbol;return o}))}
- catch(e){$('#bybit-status').textContent='Bybit instrument sync failed: '+e.message}
+ try{
+  const res=await fetch(apiBase+'/api/bybit/market/instruments?'+new URLSearchParams({category,limit:'1000',all:'true',maxPages:'10'}));
+  if(!res.ok)throw Error('Bybit instrument catalogue unavailable');
+  const data=await readApi(res),rows=Array.isArray(data.list)?data.list.filter(x=>x.symbol&&String(x.status||'Trading')==='Trading'):[];
+  list.replaceChildren(...rows.map(x=>{const o=document.createElement('option');o.value=x.symbol;return o}));
+  if(rows.length&&!rows.some(x=>x.symbol===$('#bybit-symbol').value.trim().toUpperCase()))$('#bybit-symbol').value=rows[0].symbol;
+  $('#bybit-universe-count').textContent=(data.complete===false?'Partial catalogue · ':'')+rows.length+' active instruments';
+ }catch(e){$('#bybit-status').textContent='Bybit instrument sync failed: '+e.message}
 }
 async function connectBybitAccount(){
  const token=$('#bybit-read-token').value.trim(),status=$('#bybit-account-status'),output=$('#bybit-account-data');
@@ -90,12 +96,12 @@ async function connectBybitAccount(){
  }catch(error){status.textContent=error.message;output.textContent='Account data was not loaded.'}
 }
 $('#bybit-refresh')?.addEventListener('click',refreshBybit);
-$('#bybit-category')?.addEventListener('change',()=>{refreshBybitInstruments();refreshBybit()});
+$('#bybit-category')?.addEventListener('change',async()=>{await refreshBybitInstruments();refreshBybit()});
 $('#bybit-symbol')?.addEventListener('keydown',e=>{if(e.key==='Enter')refreshBybit()});
 $('#bybit-interval')?.addEventListener('change',refreshBybit);
 $('#bybit-account-connect')?.addEventListener('click',connectBybitAccount);
 window.addEventListener('resize',drawBybitChart);
-refreshBybitInstruments();refreshBybit();setInterval(()=>{if(!document.hidden)refreshBybit()},60000);
+refreshBybitInstruments().then(refreshBybit);setInterval(()=>{if(!document.hidden)refreshBybit()},60000);
 
 const bybitPlanCategory=$('#bybit-plan-category');
 bybitPlanCategory?.addEventListener('change',()=>{
