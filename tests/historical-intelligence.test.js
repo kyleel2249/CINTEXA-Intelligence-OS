@@ -72,5 +72,5 @@ test('uses only fully closed five-minute bars for forward outcome windows',()=>{
   const candles=Array.from({length:13},(_,i)=>({time:i*300000,high:101+i,low:99,close:100+i}));
   const result=evaluateOutcomeHorizons({entry_price:100,entry_time_ms:0,direction:'BUY'},candles,[3600000],{barDurationMs:300000});
   assert.equal(result.status,'COMPLETE');
-  assert.equal(result.results['1h'].closePrice,112);
+  assert.equal(result.results['1h'].closePrice,111);
 });
