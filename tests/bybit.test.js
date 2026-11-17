@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bybitPublicRequest, bybitPrivateRequest, getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitSpotMarginState, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitPositions, getBybitAccountSnapshot, submitBybitLiveOrder } from '../worker/src/exchanges/bybit.js';
+import { bybitPublicRequest, bybitPrivateRequest, getBybitInstruments, getBybitInstrumentCatalog, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitSpotMarginState, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitPositions, getBybitAccountSnapshot, submitBybitLiveOrder } from '../worker/src/exchanges/bybit.js';
 const response=(payload,status=200)=>new Response(JSON.stringify(payload),{status,headers:{'content-type':'application/json'}});
 test('Bybit V5 public request sorts query parameters and selects the live base by default',async()=>{
  let called='';
@@ -88,4 +88,16 @@ test('Bybit market context collects book, ticker, funding and open-interest hist
 });
 test('Bybit options do not request unsupported standard kline data',async()=>{
  await assert.rejects(()=>getBybitCandles({category:'option',symbol:'BTC-30DEC26-100000-C-USDT',interval:'1',fetchImpl:async()=>response({retCode:0,result:{list:[]}})}),/does not provide standard kline candles/);
+});
+
+test('Bybit instrument catalogue follows pagination cursors and returns the complete list',async()=>{
+ let page=0;
+ const result=await getBybitInstrumentCatalog({category:'linear',limit:1000,fetchImpl:async url=>{
+  page++;
+  const cursor=new URL(url).searchParams.get('cursor');
+  return response({retCode:0,result:{list:[{symbol:page===1?'BTCUSDT':'ETHUSDT'}],nextPageCursor:page===1?'next-page':''}});
+ }});
+ assert.equal(page,2);
+ assert.deepEqual(result.list.map(x=>x.symbol),['BTCUSDT','ETHUSDT']);
+ assert.equal(result.complete,true);
 });
