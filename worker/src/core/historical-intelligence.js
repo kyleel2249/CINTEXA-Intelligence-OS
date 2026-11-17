@@ -95,8 +95,11 @@ export function evaluateOutcomeHorizons(signal, candles, horizonsMs=[3600000,144
   const ordered=candles.filter(c=>finite(c.time)&&finite(c.high)&&finite(c.low)&&finite(c.close)&&Number(c.time)>=start).slice().sort((a,b)=>a.time-b.time);
   const results={};
   for(const horizon of horizonsMs){
-    const end=start+horizon, window=ordered.filter(c=>Number(c.time)<=end);
-    if(!window.length||Number(window.at(-1).time)<end) continue;
+    const end=start+horizon, window=ordered.filter(c=>barDurationMs>0?Number(c.time)+barDurationMs<=end:Number(c.time)<=end);
+    if(!window.length) continue;
+    const lastBarClose=Number(window.at(-1).time)+(barDurationMs||0);
+    if(barDurationMs>0&&lastBarClose<end-barDurationMs) continue;
+    if(barDurationMs===0&&Number(window.at(-1).time)<end) continue;
     const close=Number(window.at(-1).close),raw=(close-entry)/entry*100,dir=signal.direction==='BUY'?1:-1;
     const highs=window.map(c=>(Number(c.high)-entry)/entry*100*dir),lows=window.map(c=>(Number(c.low)-entry)/entry*100*dir);
     results[horizon===3600000?'1h':horizon===14400000?'4h':horizon===86400000?'24h':String(horizon)]={
