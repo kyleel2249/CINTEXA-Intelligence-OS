@@ -2,7 +2,7 @@ import { evaluateTrade } from './core/signals.js';
 import { buildTradePlan } from './core/trade-planner.js';
 import { submitBitgetLiveOrder } from './exchanges/bitget.js';
 import { getBitgetInstruments, getBitgetTicker, getBitgetCandles, getBitgetMarketContext, analyseOrderBook, UpstreamError } from './exchanges/bitget-market.js';
-import { getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
+import { getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitSpotMarginLiability, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
 import { persistMarketObservation, readMarketHistory, recordSignalAndOutcome, evaluatePendingOutcomes, readSignalPerformance } from './core/historical-store.js';
 
 const PRODUCT_TYPES = new Set(['SPOT', 'MARGIN', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES', 'LINEAR', 'INVERSE', 'OPTION', 'BYBIT-SPOT', 'BYBIT-LINEAR', 'BYBIT-INVERSE']);
@@ -230,6 +230,18 @@ export default {
         await requireExchangeReadToken(req,env);
         if(!env.BYBIT_API_KEY||!env.BYBIT_API_SECRET)throw new HttpError(503,'Bybit API credentials are not configured in Worker secrets');
         return json({exchange:'BYBIT',accountType:u.searchParams.get('accountType')||'UNIFIED',data:await getBybitAccountSnapshot({env}),readOnly:true},200,env);
+      }
+      if (u.pathname === '/api/bybit/margin/borrow-quota' && req.method === 'GET') {
+        await requireExchangeReadToken(req,env);
+        return json(await getBybitSpotBorrowQuota({env,symbol:u.searchParams.get('symbol'),side:u.searchParams.get('side')||'Buy'}),200,env);
+      }
+      if (u.pathname === '/api/bybit/margin/max-borrowable' && req.method === 'GET') {
+        await requireExchangeReadToken(req,env);
+        return json(await getBybitSpotMaxBorrowable({env,currency:u.searchParams.get('currency')}),200,env);
+      }
+      if (u.pathname === '/api/bybit/margin/liability' && req.method === 'GET') {
+        await requireExchangeReadToken(req,env);
+        return json(await getBybitSpotMarginLiability({env,currency:u.searchParams.get('currency')}),200,env);
       }
       if (u.pathname === '/api/bybit/positions' && req.method === 'GET') {
         await requireExchangeReadToken(req,env);
