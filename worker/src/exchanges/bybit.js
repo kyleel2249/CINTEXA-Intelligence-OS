@@ -46,7 +46,7 @@ export async function getBybitTicker({env={},category='linear',symbol,fetchImpl=
  return{exchange:'BYBIT',category:c,symbol:s,last:Number(row.lastPrice),bid:Number(row.bid1Price),ask:Number(row.ask1Price),high24h:Number(row.highPrice24h),low24h:Number(row.lowPrice24h),volume24h:Number(row.volume24h),turnover24h:Number(row.turnover24h),price24hPcnt:Number(row.price24hPcnt),markPrice:Number(row.markPrice),indexPrice:Number(row.indexPrice),fundingRate:row.fundingRate===undefined?null:Number(row.fundingRate),openInterest:row.openInterest===undefined?null:Number(row.openInterest),nextFundingTime:Number(row.nextFundingTime)||null,timestamp:Number(result.ts)||Date.now(),source:'bybit-v5-public-rest'};
 }
 export async function getBybitCandles({env={},category='linear',symbol,interval='1',limit=200,start,end,fetchImpl=fetch}={}){
- const c=assertCategory(category),s=assertSymbol(symbol),iv=String(interval);if(!TIMEFRAMES.has(iv))throw new TypeError('Unsupported Bybit kline interval');
+ const c=assertCategory(category),s=assertSymbol(symbol),iv=String(interval);if(c==='option')throw new TypeError('Bybit V5 does not provide standard kline candles for options');if(!TIMEFRAMES.has(iv))throw new TypeError('Unsupported Bybit kline interval');
  const n=Math.min(1000,Math.max(1,Math.floor(Number(limit)||200)));
  const result=await bybitPublicRequest({env,path:'/v5/market/kline',params:{category:c,symbol:s,interval:iv,limit:n,start,end},fetchImpl});
  if(!Array.isArray(result.list))throw new Error('Bybit returned an invalid kline payload');
