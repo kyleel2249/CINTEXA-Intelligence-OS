@@ -90,7 +90,11 @@ async function saveSignalMarketContext(env, { context, ticker, productType, symb
   return { stored: results.filter(x => x.stored).length, duplicates: results.filter(x => x.duplicate).length, errors: results.filter(x => !x.stored && !x.duplicate).map(x => x.reason) };
 }
 
-async function requireExchangeReadToken(req,env){\n  if(!env.ETI_EXCHANGE_READ_TOKEN||!(await safeEqual(req.headers.get('x-eti-exchange-token')||'',env.ETI_EXCHANGE_READ_TOKEN)))throw new HttpError(401,'Unauthorised exchange account access');\n}\n\nasync function requireIngestionToken(req, env, message) {
+async function requireExchangeReadToken(req,env){
+  if(!env.ETI_EXCHANGE_READ_TOKEN||!(await safeEqual(req.headers.get('x-eti-exchange-token')||'',env.ETI_EXCHANGE_READ_TOKEN)))throw new HttpError(401,'Unauthorised exchange account access');
+}
+
+async function requireIngestionToken(req, env, message) {
   if (!env.ETI_INGESTION_TOKEN || !(await safeEqual(req.headers.get('x-eti-ingestion-token') || '', env.ETI_INGESTION_TOKEN))) throw new HttpError(401, message);
   if (!env.DB) throw new HttpError(503, 'D1 database binding is unavailable');
 }
@@ -114,7 +118,9 @@ async function handleSignals(req, env) {
   const instrument = Array.isArray(instruments) ? instruments.find(x => String(x.symbol).toUpperCase() === String(symbol).toUpperCase()) : null;
   const latest = candles.at(-1), fresh = Boolean(latest && Date.now() - latest.time <= 2 * (granularityMs[granularity] || 60000));
   const instrumentTradable = Boolean(instrument && ['normal', 'online', 'listed'].includes(String(instrument.symbolStatus || instrument.status || '').toLowerCase()));
-  let historicalOutcomes=[];\n  if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType,limit:1500})).items||[]}catch(error){console.error('[eti-calibration]',error?.message||error)}\n  const result = await evaluateTrade({ candles, timeframes, primaryTimeframe: granularity, market: { dataFresh: fresh, instrumentTradable, source: 'BITGET', context: marketContext, historicalOutcomes }, risk: { approved: false } });
+  let historicalOutcomes=[];
+  if(env.DB)try{historicalOutcomes=(await readSignalPerformance(env.DB,{symbol,productType,limit:1500})).items||[]}catch(error){console.error('[eti-calibration]',error?.message||error)}
+  const result = await evaluateTrade({ candles, timeframes, primaryTimeframe: granularity, market: { dataFresh: fresh, instrumentTradable, source: 'BITGET', context: marketContext, historicalOutcomes }, risk: { approved: false } });
   // Only persist for symbols the exchange catalogue confirms; this keeps arbitrary public requests from polluting history.
   let historyWrite = { stored: 0, errors: ['Instrument not confirmed in the Bitget catalogue; nothing persisted'] };
   let signalWrite = { persisted: false, reason: 'D1 binding unavailable or instrument unconfirmed' }, outcomeWrite = { updated: 0 };
@@ -212,9 +218,11 @@ export default {
         const candles = await getBitgetCandles({ productType, symbol, granularity, limit });
         return json({ exchange: 'BITGET', productType, symbol, granularity, candles }, 200, env);
       }
-      if (u.pathname === '/api/bybit/signals' && req.method === 'POST') return await handleBybitSignals(req,env);\n      if (u.pathname === '/api/bybit/market/instruments' && req.method === 'GET') {
+      if (u.pathname === '/api/bybit/signals' && req.method === 'POST') return await handleBybitSignals(req,env);
+      if (u.pathname === '/api/bybit/market/instruments' && req.method === 'GET') {
         const category=u.searchParams.get('category')||'linear',symbol=u.searchParams.get('symbol')||undefined,baseCoin=u.searchParams.get('baseCoin')||undefined;
-        const data=u.searchParams.get('all')==='true'?await getBybitInstrumentCatalog({env,category,baseCoin,limit:u.searchParams.get('limit')||1000,maxPages:u.searchParams.get('maxPages')||10}):await getBybitInstruments({env,category,symbol,baseCoin,limit:u.searchParams.get('limit')||1000,cursor:u.searchParams.get('cursor')||undefined});\n        return json({exchange:'BYBIT',category,...data},200,env);
+        const data=u.searchParams.get('all')==='true'?await getBybitInstrumentCatalog({env,category,baseCoin,limit:u.searchParams.get('limit')||1000,maxPages:u.searchParams.get('maxPages')||10}):await getBybitInstruments({env,category,symbol,baseCoin,limit:u.searchParams.get('limit')||1000,cursor:u.searchParams.get('cursor')||undefined});
+        return json({exchange:'BYBIT',category,...data},200,env);
       }
       if (u.pathname === '/api/bybit/market/ticker' && req.method === 'GET') {
         return json(await getBybitTicker({env,category:u.searchParams.get('category')||'linear',symbol:u.searchParams.get('symbol')}),200,env);
