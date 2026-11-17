@@ -1,5 +1,5 @@
 const apiBase=String(window.CINTEXA_API_BASE||'').replace(/\/$/,'');
-async function readApi(res){const t=res.headers.get('content-type')||'';if(!t.includes('json'))throw new Error('CINTEXA API is not reachable from this site (received a web page instead of data). Deploy the API (Pages Function or Worker) or set CINTEXA_API_BASE in config.js.');return res.json()}
+async function readApi(res){const t=res.headers.get('content-type')||'';if(!t.includes('json'))throw new Error('CINTEXA API is not reachable from this site (received a web page instead of data from '+(res.url||'the API')+'). Deploy the API (Pages Function or Worker) or set CINTEXA_API_BASE in config.js.');return res.json()}
 const style=document.createElement('style');
 style.textContent=`
 .historical-panel{margin-top:22px;background:#0c1b31;border:1px solid #1b3553;border-radius:16px;padding:20px;color:#e8f1ff}

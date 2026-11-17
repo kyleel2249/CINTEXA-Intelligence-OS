@@ -8,7 +8,8 @@
     "dev:web": "vite --host 0.0.0.0",
     "build": "vite build --outDir dist",
     "build:web": "vite build --outDir dist",
-    "check": "node scripts/check-syntax.mjs"
+    "check": "node scripts/check-syntax.mjs",
+    "deploy:site": "npm run build && wrangler deploy -c wrangler.assets.jsonc"
   },
   "devDependencies": {
     "vite": "^6.0.0"

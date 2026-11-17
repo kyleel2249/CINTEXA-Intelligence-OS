@@ -1,0 +1,26 @@
+// Single-Worker deployment: serves the built web app (dist/) AND the /api/* routes from one origin.
+// Use when the site is deployed with Cloudflare Workers (Workers Builds / `wrangler deploy`) instead of Pages.
+//   Build command:  npm run build
+//   Deploy command: npx wrangler deploy -c wrangler.assets.jsonc
+// Deliberately NOT named wrangler.jsonc/toml so Cloudflare Pages does not auto-detect it.
+{
+  "name": "cintexa-intelligence-os",
+  "main": "worker/src/index.js",
+  "compatibility_date": "2026-11-16",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": { "ETI_LIVE_ENABLED": "false" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cintexa-intelligence-os",
+      "database_id": "5c6b0816-da0d-46b9-b641-9bc36de65fc0",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+  "triggers": { "crons": ["17 2 * * *"] }
+}

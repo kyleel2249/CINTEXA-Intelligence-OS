@@ -24,6 +24,14 @@ The static web application expects the Worker API on the same origin by default.
 
 `functions/api/[[path]].js` is a Pages Function that serves every `/api/*` route from the same origin as the site using the Worker code, so no separate Worker or `CINTEXA_API_BASE` is needed. Public Bitget market data works immediately. For historical intelligence, bind the D1 database as `DB` and add the secrets in Pages > Settings > Functions, then apply the migrations in `worker/migrations`. If the API is not reachable the UI says so instead of showing a JSON parse error.
 
+### Troubleshooting: "received a web page instead of data"
+
+Open `https://YOUR-SITE/api/health`. JSON with `"status":"ok"` means the API works. A web page means no API is running on that origin. Either:
+
+- **Cloudflare Pages (Git):** root directory must be the repo root so `functions/` is found; or
+- **Cloudflare Workers (Workers Builds):** use `wrangler.assets.jsonc` (site and API in one Worker): build command `npm run build`, deploy command `npx wrangler deploy -c wrangler.assets.jsonc`; or
+- **Separate Worker:** deploy `worker/` and set `CINTEXA_API_BASE` in `public/config.js`.
+
 ## Worker configuration
 
 Copy `.env.example` to `worker/.dev.vars` for local development (git-ignored) and use `wrangler secret put` in production.
