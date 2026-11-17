@@ -54,7 +54,7 @@ export async function evaluatePendingOutcomes(db,{symbol,productType='USDT-FUTUR
   }
   return {symbol:s,examined:(rows.results||[]).length,updated};
 }
-export async function readSignalPerformance(db,{symbol,productType='USDT-FUTURES',limit=1000}={}){
+export async function readSignalPerformance(db,{symbol,productType='USDT-FUTURES',timeframe,limit=1000}={}){
   if(!db)throw new Error('D1 database binding is unavailable');
   const params=[productType],where='product_type=?';let sql='SELECT * FROM signal_outcomes WHERE '+where;
   if(symbol){sql+=' AND symbol=?';params.push(String(symbol).toUpperCase())}
