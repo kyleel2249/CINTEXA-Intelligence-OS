@@ -86,7 +86,7 @@ Candle timestamps are treated as bar-open timestamps. The evaluator only uses ba
 - Open-interest change and funding change require at least two observations.
 - Liquidity withdrawal with price displacement is an observational anomaly, not proof of spoofing.
 - Possible absorption is a low-confidence order-book pattern only. Book snapshots alone cannot prove executed aggressor flow.
-- Forward return is direction-adjusted. MFE and MAE are measured against the signal entry.
+- Forward return is direction-adjusted and gross, before fees, funding and slippage. MFE and MAE are measured against the signal entry. This is forward signal validation, not a full execution backtest.
 - Performance statistics are descriptive. They do not establish future profitability or signal accuracy.
 - The displayed win rate is calculated on completed TRADE decisions; NO TRADE decisions remain in the signal record counts.
 
