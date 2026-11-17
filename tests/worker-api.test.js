@@ -189,3 +189,28 @@ test('Pages Function serves the API from the same origin', async () => {
   assert.equal((await response.json()).status, 'ok');
   assert.match(response.headers.get('content-type'), /json/);
 });
+
+test('Bybit market universe route normalizes all category tickers',async()=>{
+ const mock=async()=>new Response(JSON.stringify({retCode:0,result:{ts:123,list:[{symbol:'BTCUSDT',lastPrice:'100',turnover24h:'1000'},{symbol:'ETHUSDT',lastPrice:'50',turnover24h:'500'}]}}),{status:200,headers:{'content-type':'application/json'}});
+ const response=await withFetch(mock,()=>call('/api/bybit/market/tickers?category=linear'));
+ assert.equal(response.status,200);
+ const data=await response.json();
+ assert.equal(data.exchange,'BYBIT');
+ assert.equal(data.tickers.length,2);
+ assert.equal(data.tickers[0].symbol,'BTCUSDT');
+});
+test('Bybit private account routes require the separate exchange-read token',async()=>{
+ const response=await call('/api/bybit/account',{env:{BYBIT_API_KEY:'key',BYBIT_API_SECRET:'secret'}});
+ assert.equal(response.status,401);
+ assert.match((await response.json()).error,/exchange account access/);
+});
+test('Bybit order route remains blocked even with the execution token',async()=>{
+ const env={ETI_EXECUTION_TOKEN:'exec-secret',BYBIT_LIVE_ENABLED:'true',ETI_LIVE_ENABLED:'true'};
+ assert.equal((await call('/api/bybit/orders',{method:'POST',body:{symbol:'BTCUSDT'},env})).status,401);
+ const response=await call('/api/bybit/orders',{method:'POST',body:{symbol:'BTCUSDT'},env,headers:{authorization:'Bearer exec-secret'}});
+ assert.equal(response.status,403);
+ const data=await response.json();
+ assert.equal(data.executionAllowed,false);
+ assert.equal(data.submitted,false);
+ assert.match(data.error,/hard-disabled/);
+});
