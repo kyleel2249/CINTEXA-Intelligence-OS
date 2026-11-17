@@ -56,6 +56,11 @@ export async function getBybitInstrumentCatalog({env={},category='linear',baseCo
  }
  return{category:c,list,nextPageCursor:hasMore?nextCursor:'',pages,complete:!hasMore};
 }
+export async function getBybitTickers({env={},category='linear',baseCoin,fetchImpl=fetch}={}){
+ const c=assertCategory(category);
+ const result=await bybitPublicRequest({env,path:'/v5/market/tickers',params:{category:c,baseCoin:c==='option'?(baseCoin||'All'):baseCoin},fetchImpl});
+ return(result.list||[]).map(row=>({exchange:'BYBIT',category:c,symbol:String(row.symbol||''),last:Number(row.lastPrice),bid:Number(row.bid1Price),ask:Number(row.ask1Price),high24h:Number(row.highPrice24h),low24h:Number(row.lowPrice24h),volume24h:Number(row.volume24h),turnover24h:Number(row.turnover24h),price24hPcnt:Number(row.price24hPcnt),markPrice:Number(row.markPrice),indexPrice:Number(row.indexPrice),fundingRate:row.fundingRate===undefined?null:Number(row.fundingRate),openInterest:row.openInterest===undefined?null:Number(row.openInterest),nextFundingTime:Number(row.nextFundingTime)||null,timestamp:Number(result.ts)||Date.now()})).filter(x=>x.symbol&&Number.isFinite(x.last));
+}
 export async function getBybitTicker({env={},category='linear',symbol,fetchImpl=fetch}={}){
  const c=assertCategory(category),s=assertSymbol(symbol);
  const result=await bybitPublicRequest({env,path:'/v5/market/tickers',params:{category:c,symbol:s},fetchImpl});
