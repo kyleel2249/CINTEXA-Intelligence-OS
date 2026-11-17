@@ -17,7 +17,7 @@ test('calculates open-interest and funding changes only with multiple observatio
   ];
   const result=analyseDerivativesHistory(rows);
   assert.equal(result.openInterest.changePercent,25);
-  assert.equal(result.funding.change,.0002);
+  assert.ok(Math.abs(result.funding.change-.0002)<1e-10);
   assert.equal(analyseDerivativesHistory(rows.slice(0,1)).openInterest.available,false);
 });
 
