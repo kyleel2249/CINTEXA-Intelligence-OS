@@ -48,13 +48,13 @@ Supported market categories:
 
 The public market API includes:
 - Instruments and trading status.
-- Tickers.
+- Full-category ticker snapshots for the complete listed instrument universe, plus individual symbol tickers.
 - OHLCV candles for Spot, Linear and Inverse.
 - Order-book snapshots.
 - Funding-rate history for Linear and Inverse.
 - Open-interest history for Linear and Inverse.
 
-Options are currently market-data and account-visibility only. ETI directional signal evaluation is enabled for Spot, Linear and Inverse.
+Options are currently market-data and account-visibility only. ETI directional signal evaluation is enabled for Spot, Linear and Inverse. The Bybit planner supports Spot, Spot Margin, Linear and Inverse; inverse planning requires a supplied contract value and uses a separate inverse-payoff calculation. Options planning is withheld until an options premium/Greeks risk model is implemented.
 
 ## Protected account endpoints
 
@@ -75,10 +75,12 @@ Spot Margin uses Bybit's Spot category and Unified account margin facilities. Th
 
 Public:
 - `GET /api/bybit/market/instruments?category=linear`
+- `GET /api/bybit/market/tickers?category=linear`: all category tickers in one snapshot.
 - `GET /api/bybit/market/ticker?category=linear&symbol=BTCUSDT`
 - `GET /api/bybit/market/candles?category=linear&symbol=BTCUSDT&interval=1&limit=200`
 - `GET /api/bybit/market/context?category=linear&symbol=BTCUSDT`
-- `POST /api/bybit/signals` with `{ "category":"linear", "symbol":"BTCUSDT", "interval":"1" }`
+- `POST /api/bybit/signals` with `{ "category":"linear", "symbol":"BTCUSDT", "interval":"1" }`.
+- `POST /api/bybit/trade-plan`: authenticated precision-aware order preview for Spot, Spot Margin, Linear and Inverse. It requires equity, available balance, ATR, risk fraction, leverage and margin mode. Inverse previews also require an explicitly confirmed USD contract value.
 
 Bybit signal outcomes use an exchange-prefixed product identifier such as `BYBIT-LINEAR`, so Bybit results do not mix with Bitget history.
 
@@ -116,7 +118,7 @@ This is intentional. Before live orders can be enabled, ETI must implement and v
 7. Emergency reduce-only close, kill switch, stale-feed lockout and rate-limit handling.
 8. An explicit operator activation process with testnet and production separation.
 
-The Bybit connector currently provides authenticated reads, not live order placement or account-setting mutations. Do not set a live-enable flag or grant trade permission expecting order submission to work.
+The Bybit connector currently provides authenticated reads and precision-aware order previews, not live order placement or account-setting mutations. Do not set a live-enable flag or grant trade permission expecting order submission to work.
 
 ## Tests
 
