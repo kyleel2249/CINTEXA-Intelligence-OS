@@ -3,6 +3,7 @@ import { buildTradePlan } from './core/trade-planner.js';
 import { submitBitgetLiveOrder } from './exchanges/bitget.js';
 import { getBitgetInstruments, getBitgetTicker, getBitgetCandles, getBitgetMarketContext, analyseOrderBook, UpstreamError } from './exchanges/bitget-market.js';
 import { getBybitInstruments, getBybitInstrumentCatalog, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitSpotMarginLiability, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
+import { buildBybitTradePlan } from './core/bybit-trade-planner.js';
 import { persistMarketObservation, readMarketHistory, recordSignalAndOutcome, evaluatePendingOutcomes, readSignalPerformance } from './core/historical-store.js';
 
 const PRODUCT_TYPES = new Set(['SPOT', 'MARGIN', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES', 'LINEAR', 'INVERSE', 'OPTION', 'BYBIT-SPOT', 'BYBIT-LINEAR', 'BYBIT-INVERSE']);
@@ -266,6 +267,22 @@ export default {
       if (u.pathname === '/api/bybit/executions' && req.method === 'GET') {
         await requireExchangeReadToken(req,env);
         return json(await getBybitExecutions({env,category:u.searchParams.get('category')||'linear',symbol:u.searchParams.get('symbol')||undefined,limit:u.searchParams.get('limit')||50}),200,env);
+      }
+      if (u.pathname === '/api/bybit/trade-plan' && req.method === 'POST') {
+        await requireExchangeReadToken(req,env);
+        if(!env.BYBIT_API_KEY||!env.BYBIT_API_SECRET)throw new HttpError(503,'Bybit API credentials are not configured in Worker secrets');
+        const body=await readJson(req),category=String(body.category||'linear').toLowerCase(),symbol=String(body.symbol||'').toUpperCase();
+        const instrumentResult=await getBybitInstruments({env,category,symbol,limit:1});
+        const instrument=instrumentResult.list?.find(x=>String(x.symbol).toUpperCase()===symbol);
+        if(!instrument)throw new HttpError(404,'Bybit instrument was not found in the exchange catalogue');
+        const ticker=await getBybitTicker({env,category,symbol});
+        let spotMarginState=null,borrowQuota=null;
+        if(category==='spot'&&body.useSpotMargin===true){
+          spotMarginState=await getBybitSpotMarginState({env});
+          borrowQuota=await getBybitSpotBorrowQuota({env,symbol,side:String(body.direction||'BUY').toUpperCase()==='SELL'?'Sell':'Buy'});
+        }
+        const result=buildBybitTradePlan({input:body,instrument,ticker,spotMarginState,borrowQuota});
+        return json({...result,executionAllowed:false,executionReady:false},200,env);
       }
       if (u.pathname === '/api/bybit/orders' && req.method === 'POST') {
         if(!env.ETI_EXECUTION_TOKEN||!(await safeEqual(req.headers.get('authorization')||'',`Bearer ${env.ETI_EXECUTION_TOKEN}`)))return json({error:'Unauthorised',executionAllowed:false},401,env);
