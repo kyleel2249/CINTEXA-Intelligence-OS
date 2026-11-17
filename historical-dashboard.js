@@ -23,7 +23,7 @@ function initHistoricalPanel(){
    <div class="historical-stat"><small>Market observations</small><strong id="eti-hist-count">—</strong></div>
    <div class="historical-stat"><small>Signal records</small><strong id="eti-hist-signals">—</strong></div>
    <div class="historical-stat"><small>4h directional win rate</small><strong id="eti-hist-winrate">—</strong></div>
-   <div class="historical-stat"><small>4h expectancy</small><strong id="eti-hist-expectancy">—</strong></div>
+   <div class="historical-stat"><small>4h gross expectancy</small><strong id="eti-hist-expectancy">—</strong></div>
   </div>
   <div class="historical-columns">
    <div class="historical-box"><h4>Derivatives and liquidity</h4><div id="eti-hist-derivatives" class="historical-muted">Waiting for persisted market observations.</div></div>
