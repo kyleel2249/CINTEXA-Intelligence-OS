@@ -29,9 +29,9 @@ export function calibrateHistoricalSignals(rows=[],{minimumSample=30,horizon='4h
  if(total<minimumSample)return{available:false,reliability:'INSUFFICIENT_SAMPLE',sampleSize:total,winRate:total?wins/total*100:null,conservativeWinRate:null,minimumSample};
  return{available:true,reliability:'CALIBRATED_DESCRIPTIVE',sampleSize:total,winRate:wins/total*100,conservativeWinRate:wilsonLower(wins,total)*100,minimumSample,horizon};
 }
-export function analyseAdaptiveSignal({candles,indicators={},baseScore=0,direction='NEUTRAL',multiTimeframe={},microstructure={},historicalOutcomes=[]}={}){
+export function analyseAdaptiveSignal({candles,indicators={},baseScore=0,direction='NEUTRAL',multiTimeframe={},microstructure={},historicalOutcomes=[],minimumScore=68}={}){
  const regime=classifyMarketRegime(candles,indicators,microstructure),calibration=calibrateHistoricalSignals(historicalOutcomes);
- let adjustment=0,threshold=68,reasons=[...regime.reasons];
+ let adjustment=0,threshold=clamp(Number(minimumScore)||68,65,90),reasons=[...regime.reasons];
  if(regime.regime==='HIGH_VOLATILITY'){adjustment-=5;threshold+=5;reasons.push('High volatility reduces score and raises the trade threshold')}
  if(regime.regime==='RANGING'){adjustment-=3;threshold+=4;reasons.push('Range-bound conditions require stronger confirmation')}
  if(regime.regime==='LOW_VOLATILITY'){threshold+=2;reasons.push('Compressed volatility requires a confirmed expansion trigger')}
