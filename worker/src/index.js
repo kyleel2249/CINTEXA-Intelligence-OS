@@ -72,7 +72,7 @@ export default {
         const multiGranularities=['1min','5min','15min','1H','4H','1D','1W'];
         const [candles,timeframeRows,instruments,contextResult,tickerResult]=await Promise.all([
           getBitgetCandles({productType,symbol,granularity,limit:200}),
-          Promise.all(multiGranularities.filter(g=>g!==granularity).map(async g=>[g,await getBitgetCandles({productType,symbol,granularity:g,limit:200})])),
+          Promise.all(multiGranularities.filter(g=>g!==granularity).map(async g=>[g,await getBitgetCandles({productType,symbol,granularity:g,limit:g==='5min'?400:200})])),
           getBitgetInstruments({productType}),
           getBitgetMarketContext({productType,symbol}).then(data=>({data})).catch(error=>({error:error.message})),
           getBitgetTicker({productType,symbol}).then(data=>({data})).catch(error=>({error:error.message}))
