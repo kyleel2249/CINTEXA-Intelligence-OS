@@ -58,6 +58,7 @@ export async function readSignalPerformance(db,{symbol,productType='USDT-FUTURES
   if(!db)throw new Error('D1 database binding is unavailable');
   const params=[productType],where='product_type=?';let sql='SELECT * FROM signal_outcomes WHERE '+where;
   if(symbol){sql+=' AND symbol=?';params.push(String(symbol).toUpperCase())}
+  if(timeframe){sql+=' AND timeframe=?';params.push(String(timeframe))}
   sql+=' ORDER BY entry_time_ms DESC LIMIT ?';params.push(Math.min(5000,Math.max(1,Number(limit)||1000)));
   const rows=await db.prepare(sql).bind(...params).all();
   const items=(rows.results||[]).map(r=>({...r,horizonResults:parse(r.horizon_results_json)}));
