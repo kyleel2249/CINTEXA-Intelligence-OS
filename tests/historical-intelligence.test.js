@@ -60,3 +60,17 @@ test('does not create a completed outcome when the requested forward horizon is 
   const result=evaluateOutcomeHorizons({entry_price:100,entry_time_ms:0,direction:'SELL'},[{time:0,high:101,low:99,close:100}]);
   assert.equal(result.status,'PENDING');
 });
+
+test('flags persistent book pressure with stable mid-price as a low-confidence absorption candidate',()=>{
+  const rows=[0,1,2].map((n)=>({observationType:'ORDER_BOOK',observedAt:1000+n*1000,data:{mid:100+n*.01,bidNotional:1200,askNotional:300,notionalImbalance:.6}}));
+  const events=detectLiquidityEvents(rows);
+  const absorption=events.find(x=>x.type==='POSSIBLE_LIQUIDITY_ABSORPTION');
+  assert.ok(absorption);
+  assert.equal(absorption.confidence,'LOW');
+});
+test('uses only fully closed five-minute bars for forward outcome windows',()=>{
+  const candles=Array.from({length:13},(_,i)=>({time:i*300000,high:101+i,low:99,close:100+i}));
+  const result=evaluateOutcomeHorizons({entry_price:100,entry_time_ms:0,direction:'BUY'},candles,[3600000],{barDurationMs:300000});
+  assert.equal(result.status,'COMPLETE');
+  assert.equal(result.results['1h'].closePrice,112);
+});
