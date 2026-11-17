@@ -21,3 +21,12 @@
 .bybit-margin-check input{width:auto}
 #bybit-plan-output{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}
 @media(max-width:700px){.bybit-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bybit-plan-grid button{grid-column:span 2}}
+
+.bybit-universe{margin:12px 0;background:#09172a;border:1px solid #1b3553;border-radius:10px;padding:10px}
+.bybit-table-scroll{max-height:250px;overflow:auto}
+.bybit-ticker-table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+.bybit-ticker-table th,.bybit-ticker-table td{padding:8px 7px;border-bottom:1px solid #1b3553;text-align:right}
+.bybit-ticker-table th:first-child,.bybit-ticker-table td:first-child{text-align:left}
+.bybit-ticker-table tbody tr{cursor:pointer}
+.bybit-ticker-table tbody tr:hover{background:#142b46}
+.bybit-ticker-table .positive{color:#4ed69a}.bybit-ticker-table .negative{color:#ff7777}
