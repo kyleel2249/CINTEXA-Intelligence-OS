@@ -83,9 +83,12 @@ export default {
         const instrumentTradable=Boolean(instrument&&['normal','online','listed'].includes(String(instrument.symbolStatus||instrument.status||'').toLowerCase()));
         const result=await evaluateTrade({candles,timeframes,primaryTimeframe:granularity,market:{dataFresh:fresh,instrumentTradable,source:'BITGET',context:marketContext},risk:{approved:false}});
         const historyWrite=await saveSignalMarketContext(env,{context:marketContext,ticker:tickerResult.data,productType,symbol});
-        let signalWrite={persisted:false,reason:'D1 binding unavailable'};
-        if(env.DB)try{signalWrite=await recordSignalAndOutcome(env.DB,{signal:result,productType,symbol,timeframe:granularity});}catch(error){signalWrite={persisted:false,reason:error.message};}
-        return json({...result,history:{marketObservations:historyWrite,signal:signalWrite},market:{exchange:'BITGET',productType,symbol,granularity,lastCandleTime:latest?.time??null,dataFresh:fresh,instrumentTradable,contextAvailable:Boolean(marketContext),contextError:contextResult.error||null},executionAllowed:false,executionBlock:'ETIAlgo V3 Alpha is active; live execution remains blocked pending verified account risk, protective orders, idempotency and reconciliation.'},200,env);
+        let signalWrite={persisted:false,reason:'D1 binding unavailable'},outcomeWrite={updated:0};
+        if(env.DB)try{
+          signalWrite=await recordSignalAndOutcome(env.DB,{signal:result,productType,symbol,timeframe:granularity});
+          outcomeWrite=await evaluatePendingOutcomes(env.DB,{symbol,productType,candles:timeframes['5min']||[],barDurationMs:300000});
+        }catch(error){signalWrite={...signalWrite,reason:error.message};}
+        return json({...result,history:{marketObservations:historyWrite,signal:signalWrite,outcomes:outcomeWrite},market:{exchange:'BITGET',productType,symbol,granularity,lastCandleTime:latest?.time??null,dataFresh:fresh,instrumentTradable,contextAvailable:Boolean(marketContext),contextError:contextResult.error||null},executionAllowed:false,executionBlock:'ETIAlgo V3 Alpha is active; live execution remains blocked pending verified account risk, protective orders, idempotency and reconciliation.'},200,env);
       }
       if (u.pathname === '/api/eti/observations' && req.method === 'POST') {
         if (!env.ETI_INGESTION_TOKEN || req.headers.get('x-eti-ingestion-token') !== env.ETI_INGESTION_TOKEN) return json({error:'Unauthorised observation ingestion'},401,env);
