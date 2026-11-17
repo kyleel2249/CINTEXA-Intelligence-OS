@@ -8,14 +8,14 @@ export async function persistMarketObservation(db,input){
     .bind(key,o.exchange,o.productType,o.symbol,o.observationType,o.observedAt,JSON.stringify(o.data),'VALID',o.source).run();
   return {stored:Boolean(result.meta?.changes),duplicate:!result.meta?.changes,observation:{...o,id:key}};
 }
-export async function readMarketHistory(db,{symbol,productType='USDT-FUTURES',hours=24,limit=1000}={}){
+export async function readMarketHistory(db,{exchange='BITGET',symbol,productType='USDT-FUTURES',hours=24,limit=1000}={}){
   if(!db) throw new Error('D1 database binding is unavailable');
   const s=String(symbol||'').toUpperCase();if(!/^[A-Z0-9]{2,30}$/.test(s))throw new TypeError('A valid symbol is required');
   const since=Date.now()-Math.min(168,Math.max(1,Number(hours)||24))*3600000;
   const rows=await db.prepare('SELECT observation_type,observed_at_ms,data_json,quality,source FROM market_observations WHERE exchange=? AND product_type=? AND symbol=? AND observed_at_ms>=? ORDER BY observed_at_ms DESC LIMIT ?')
-    .bind('BITGET',productType,s,since,Math.min(5000,Math.max(1,Number(limit)||1000))).all();
+    .bind(String(exchange||'BITGET').toUpperCase(),productType,s,since,Math.min(5000,Math.max(1,Number(limit)||1000))).all();
   const observations=(rows.results||[]).map(r=>({observationType:r.observation_type,observedAt:Number(r.observed_at_ms),data:parse(r.data_json),quality:r.quality,source:r.source})).reverse();
-  return {symbol:s,productType,observations,derivatives:analyseDerivativesHistory(observations),liquidityEvents:detectLiquidityEvents(observations),count:observations.length};
+  return {exchange:String(exchange||'BITGET').toUpperCase(),symbol:s,productType,observations,derivatives:analyseDerivativesHistory(observations),liquidityEvents:detectLiquidityEvents(observations),count:observations.length};
 }
 export async function recordSignalAndOutcome(db,{signal,productType,symbol,timeframe,now=Date.now()}){
   if(!db) return {persisted:false,reason:'D1 database binding is unavailable'};
