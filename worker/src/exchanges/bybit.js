@@ -114,9 +114,9 @@ export async function getBybitCollateralInfo({env,currency}={}){
 export async function getBybitWalletBalance({env,accountType='UNIFIED',coin}={}){
  return bybitPrivateRequest({env,path:'/v5/account/wallet-balance',params:{accountType,coin}});
 }
-export async function getBybitPositions({env,category='linear',symbol,settleCoin,baseCoin,limit=200,cursor}={}){
+export async function getBybitPositions({env,category='linear',symbol,settleCoin,baseCoin,limit=200,cursor,fetchImpl=fetch}={}){
  const c=assertCategory(category);if(c==='spot')throw new TypeError('Spot balances are reported through the Unified wallet endpoint');
- return bybitPrivateRequest({env,path:'/v5/position/list',params:{category:c,symbol:symbol?assertSymbol(symbol):undefined,settleCoin,baseCoin,limit:Math.min(200,Math.max(1,Number(limit)||200)),cursor}});
+ return bybitPrivateRequest({env,path:'/v5/position/list',params:{category:c,symbol:symbol?assertSymbol(symbol):undefined,settleCoin,baseCoin,limit:Math.min(200,Math.max(1,Number(limit)||200)),cursor},fetchImpl});
 }
 export async function getBybitOpenOrders({env,category='linear',symbol,openOnly=0,limit=50,cursor}={}){
  const c=assertCategory(category);
