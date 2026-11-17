@@ -74,3 +74,12 @@ test('uses only fully closed five-minute bars for forward outcome windows',()=>{
   assert.equal(result.status,'COMPLETE');
   assert.equal(result.results['1h'].closePrice,111);
 });
+
+test('accepts normalized Bybit observations while retaining exchange provenance',()=>{
+ const row=validateMarketObservation({exchange:'BYBIT',observationType:'TICKER',productType:'LINEAR',symbol:'BTCUSDT',observedAt:Date.now(),data:{last:100},source:'BYBIT'});
+ assert.equal(row.exchange,'BYBIT');
+ assert.equal(row.productType,'LINEAR');
+});
+test('rejects unknown exchange provenance',()=>{
+ assert.throws(()=>validateMarketObservation({exchange:'UNKNOWN',observationType:'TICKER',productType:'SPOT',symbol:'BTCUSDT',observedAt:Date.now(),data:{last:100}}),/Unsupported exchange provenance/);
+});
