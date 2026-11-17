@@ -9,5 +9,10 @@ database_id="5c6b0816-da0d-46b9-b641-9bc36de65fc0"
 migrations_dir="migrations"
 [vars]
 ETI_LIVE_ENABLED="false"
+# Set to the exact web origin that may call this API (default https://cintexa.com):
+# CORS_ORIGIN="https://your-site.example"
+# Best-effort per-IP request cap for POST /api/eti/signals (default 30/min):
+# RATE_LIMIT_PER_MIN="30"
+# Secrets (BITGET_*, ETI_EXECUTION_TOKEN, ETI_INGESTION_TOKEN) are set with `wrangler secret put`.
 [triggers]
 crons=["17 2 * * *"]

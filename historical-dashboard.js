@@ -33,7 +33,8 @@ function initHistoricalPanel(){
  </section>`);
  const el=id=>document.getElementById(id);
  const fmt=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toFixed(d):'—';
- const line=(label,value)=>'<div class="historical-line"><span class="historical-muted">'+label+'</span><b>'+value+'</b></div>';
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const line=(label,value)=>'<div class="historical-line"><span class="historical-muted">'+esc(label)+'</span><b>'+esc(value)+'</b></div>';
  async function load(){
   const symbol=document.querySelector('#market-symbol')?.value?.trim().toUpperCase()||'BTCUSDT';
   const productType=document.querySelector('#market-product')?.value||'USDT-FUTURES';
@@ -58,14 +59,14 @@ function initHistoricalPanel(){
     line('Latest funding',funding.current!==null&&funding.current!==undefined?fmt(Number(funding.current)*100,4)+'%':'Unavailable')+
     line('Funding observations',funding.observations??0)+
     line('Detected liquidity events',events.length)+
-    (events.slice(-3).map(e=>line(e.type.replaceAll('_',' '),new Date(e.observedAt).toLocaleTimeString())).join('')||'<p class="historical-muted">No qualifying liquidity events in this sample.</p>');
+    (events.slice(-3).map(e=>line(String(e.type).replaceAll('_',' '),new Date(e.observedAt).toLocaleTimeString())).join('')||'<p class="historical-muted">No qualifying liquidity events in this sample.</p>');
    el('eti-hist-validation').innerHTML=
     line('Completed outcomes',summary.completedSignals??0)+
     line('Pending outcomes',summary.pendingSignals??0)+
     line('Trade decisions',summary.tradeSignals??0)+
     line('NO TRADE decisions',summary.noTradeSignals??0)+
     line('Profit factor',Number.isFinite(four.profitFactor)?fmt(four.profitFactor):'Insufficient sample')+
-    '<p class="historical-muted" style="font-size:11px;margin-top:10px">4h sample: '+(four.sampleSize??0)+' outcomes · '+(four.reliability||'INSUFFICIENT_SAMPLE')+'. No accuracy claim is made from an unvalidated sample.</p>';
+    '<p class="historical-muted" style="font-size:11px;margin-top:10px">4h sample: '+esc(four.sampleSize??0)+' outcomes · '+esc(four.reliability||'INSUFFICIENT_SAMPLE')+'. No accuracy claim is made from an unvalidated sample.</p>';
    el('eti-hist-status').textContent='Loaded '+history.count+' persisted observations for '+symbol+'. Outcome validation advances when forward candle history is submitted.';
   }catch(error){
    ['eti-hist-count','eti-hist-signals','eti-hist-winrate','eti-hist-expectancy'].forEach(id=>el(id).textContent='—');

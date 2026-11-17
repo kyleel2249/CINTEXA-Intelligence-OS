@@ -20,13 +20,23 @@ export async function readMarketHistory(db,{symbol,productType='USDT-FUTURES',ho
 export async function recordSignalAndOutcome(db,{signal,productType,symbol,timeframe,now=Date.now()}){
   if(!db) return {persisted:false,reason:'D1 database binding is unavailable'};
   const direction=signal.rawDirection||signal.direction||'NEUTRAL',entry=Number(signal.analysis?.entryContext?.lastPrice),dedupeKey=[productType,symbol,timeframe,direction,signal.decision,Math.floor(now/60000)].join(':');
-  const existing=await db.prepare('SELECT signal_id,id FROM signal_outcomes WHERE dedupe_key=? LIMIT 1').bind(dedupeKey).first();
+  const findExisting=()=>db.prepare('SELECT signal_id,id FROM signal_outcomes WHERE dedupe_key=? LIMIT 1').bind(dedupeKey).first();
+  const existing=await findExisting();
   if(existing)return {persisted:true,duplicate:true,signalId:existing.signal_id,outcomeId:existing.id};
   const signalId=id(),outcomeId=id();
-  await db.prepare('INSERT INTO signal_events (id,instrument_id,direction,decision,score,evidence_json,strategy_versions_json,created_at) VALUES (?,NULL,?,?,?,?,?,?)')
-    .bind(signalId,signal.rawDirection||signal.direction,signal.decision,Number(signal.score)||0,JSON.stringify(signal.evidence||[]),JSON.stringify({algorithm:signal.algorithm,version:signal.version}),new Date(now).toISOString()).run();
-  await db.prepare('INSERT INTO signal_outcomes (id,signal_id,dedupe_key,product_type,symbol,timeframe,direction,decision,entry_price,entry_time_ms,signal_score,status,horizon_results_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(outcomeId,signalId,dedupeKey,productType,symbol,timeframe,direction,signal.decision,finiteOrNull(entry),now,Number(signal.score)||0,(['BUY','SELL'].includes(direction)&&Number.isFinite(entry)&&entry>0)?'PENDING':'INVALID','{}').run();
+  const signalInsert=db.prepare('INSERT INTO signal_events (id,instrument_id,direction,decision,score,evidence_json,strategy_versions_json,created_at) VALUES (?,NULL,?,?,?,?,?,?)')
+    .bind(signalId,direction,signal.decision,Number(signal.score)||0,JSON.stringify(signal.evidence||[]),JSON.stringify({algorithm:signal.algorithm,version:signal.version}),new Date(now).toISOString());
+  const outcomeInsert=db.prepare('INSERT INTO signal_outcomes (id,signal_id,dedupe_key,product_type,symbol,timeframe,direction,decision,entry_price,entry_time_ms,signal_score,status,horizon_results_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(outcomeId,signalId,dedupeKey,productType,symbol,timeframe,direction,signal.decision,finiteOrNull(entry),now,Number(signal.score)||0,(['BUY','SELL'].includes(direction)&&Number.isFinite(entry)&&entry>0)?'PENDING':'INVALID','{}');
+  try{
+    // Both rows are written in one D1 batch (a single transaction) so a failed outcome insert cannot leave an orphan signal event.
+    await db.batch([signalInsert,outcomeInsert]);
+  }catch(error){
+    // A concurrent request in the same minute can win the UNIQUE(dedupe_key) race; treat that as a duplicate, not a failure.
+    const raced=await findExisting().catch(()=>null);
+    if(raced)return {persisted:true,duplicate:true,signalId:raced.signal_id,outcomeId:raced.id};
+    throw error;
+  }
   return {persisted:true,signalId,outcomeId};
 }
 function finiteOrNull(v){return Number.isFinite(v)?v:null}

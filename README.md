@@ -14,7 +14,27 @@ npm run check
 npm run build:web
 ```
 
-The static web application expects the Worker API on the same origin by default. When the Worker is hosted separately, define `window.CINTEXA_API_BASE` before loading `src.js` with the Worker hostname. Configure the Worker `CORS_ORIGIN` variable to the exact Pages/site origin.
+`npm run check` syntax-checks every plain JavaScript file in the repository automatically (React Native sources under `apps/` use JSX and are skipped).
+
+The static web application expects the Worker API on the same origin by default. When the Worker is hosted separately, set `window.CINTEXA_API_BASE` in `public/config.js` (served unbundled, so it can be edited after a build and works under the strict Content-Security-Policy) to the Worker origin, and set the Worker `CORS_ORIGIN` variable to the exact site origin. `public/_headers` supplies security headers (CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) when hosted on Cloudflare Pages.
+
+## Worker configuration
+
+Copy `.env.example` to `worker/.dev.vars` for local development (git-ignored) and use `wrangler secret put` in production.
+
+| Name | Kind | Purpose |
+| --- | --- | --- |
+| `BITGET_API_KEY`, `BITGET_API_SECRET`, `BITGET_API_PASSPHRASE` | secret | Future authenticated Bitget services (public market data needs none). |
+| `ETI_EXECUTION_TOKEN` | secret | Bearer token for `POST /api/eti/orders`. The route stays hard-disabled and answers `403` once authorised. |
+| `ETI_INGESTION_TOKEN` | secret | `x-eti-ingestion-token` for `POST /api/eti/observations` and `POST /api/eti/outcomes/evaluate`. |
+| `CORS_ORIGIN` | variable | Exact web origin allowed to call the API (default `https://cintexa.com`). |
+| `RATE_LIMIT_PER_MIN` | variable | Per-IP cap for `POST /api/eti/signals` (default 30). |
+
+Token comparisons are constant-time. Client errors (malformed JSON, invalid symbol/product) return `400`; upstream Bitget failures return a sanitised `502` (full diagnostics go to Worker logs, not to clients); rate-limited callers receive `429` with `Retry-After`.
+
+### Abuse protection
+
+`POST /api/eti/signals` fans out to several Bitget endpoints and writes to D1. It has a best-effort per-IP limiter, but Worker isolates do not share memory, so it is a backstop, not a guarantee. Add a Cloudflare rate-limiting rule for `/api/eti/signals` on the zone for authoritative protection. Observations and signals are persisted only for symbols confirmed in the Bitget instrument catalogue, and observation timestamps are bucketed to the minute so repeated requests deduplicate instead of growing the table.
 
 ## Bitget market-data API
 
@@ -24,7 +44,7 @@ Public market-data routes do not require API credentials:
 - `GET /api/market/ticker?productType=USDT-FUTURES&symbol=BTCUSDT`
 - `GET /api/market/candles?productType=USDT-FUTURES&symbol=BTCUSDT&granularity=1min&limit=200`
 - `GET /api/market/context?productType=USDT-FUTURES&symbol=BTCUSDT`
-- `POST /api/eti/signals` with `{"productType":"USDT-FUTURES","symbol":"BTCUSDT","granularity":"1min"}`
+- `POST /api/eti/signals` with `{"productType":"USDT-FUTURES","symbol":"BTCUSDT","granularity":"1min"}`. If a higher-timeframe request fails the analysis still completes (fail-closed) and `market.unavailableTimeframes` lists what was missing.
 
 Supported product families: Spot, Margin metadata, USDT Futures, USDC Futures and Coin Futures. Candle intervals are validated and normalized for Bitget Spot and Mix APIs. The web command centre refreshes ticker and one-minute candle history every 60 seconds.
 
@@ -70,5 +90,7 @@ No indicator or model guarantees profitable future trades. Backtesting, walk-for
 ## Current status
 
 Implemented: executive interface, department directory, Bitget public REST market-data service, minute-refreshing market chart, native ETIAlgo V3 Alpha core and Alpha impulse analysis, expanded SMC modules, multi-timeframe analysis, order-book/funding/open-interest context, microstructure confluence, trade-planning module, independent risk module, D1 schema and CI checks.
+
+Known limitations: the mobile client is a static preview and is not connected to the Worker API; the repository has no committed lockfile (`npm install` is used in CI); Bitget spot/margin candle interval strings for hours/days (for example `1H`, `1D`) are sent unchanged and should be confirmed against Bitget's current spot API before relying on spot multi-timeframe analysis.
 
 Outstanding: Bitget WebSocket streaming, authenticated account and position synchronisation, verified account equity for sizing, D1-backed runtime persistence, complete execution lifecycle, advanced backtesting and walk-forward validation, model calibration, production acceptance and security testing.
