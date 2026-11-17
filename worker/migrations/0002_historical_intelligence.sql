@@ -15,6 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_market_observations_lookup ON market_observations
 CREATE TABLE IF NOT EXISTS signal_outcomes (
   id TEXT PRIMARY KEY,
   signal_id TEXT NOT NULL UNIQUE REFERENCES signal_events(id),
+  dedupe_key TEXT NOT NULL UNIQUE,
   product_type TEXT NOT NULL,
   symbol TEXT NOT NULL,
   timeframe TEXT NOT NULL,
