@@ -20,7 +20,7 @@ export function validateMarketObservation(input = {}) {
   if (observationType === 'FUNDING' && !finite(d.rate)) throw new TypeError('Funding observation requires a finite rate');
   if (observationType === 'OPEN_INTEREST' && (!finite(d.size) || Number(d.size) < 0)) throw new TypeError('Open-interest observation requires a non-negative size');
   if (observationType === 'TICKER' && (!finite(d.last) || Number(d.last) <= 0)) throw new TypeError('Ticker observation requires a positive last price');
-  return { observationType, symbol, productType, observedAt: Math.floor(observedAt), data: d, source: String(input.source || 'BITGET').slice(0,40) };
+  const exchange=String(input.exchange||'BITGET').toUpperCase();\n  if(exchange!=='BITGET') throw new TypeError('Only the configured Bitget market source is accepted');\n  return { exchange, observationType, symbol, productType, observedAt: Math.floor(observedAt), data: d, source: String(input.source || 'BITGET').slice(0,40) };
 }
 
 export function analyseDerivativesHistory(observations = []) {
