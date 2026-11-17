@@ -93,17 +93,17 @@ export async function getBybitMarketContext({env={},category='linear',symbol,fet
 export async function getBybitSpotMarginState({env}={}){
  return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/state'});
 }
-export async function getBybitSpotBorrowQuota({env,symbol,side='Buy'}={}){
+export async function getBybitSpotBorrowQuota({env,symbol,side='Buy',fetchImpl=fetch}={}){
  const s=assertSymbol(symbol),direction=String(side);if(!['Buy','Sell'].includes(direction))throw new TypeError('Spot borrow quota side must be Buy or Sell');
- return bybitPrivateRequest({env,path:'/v5/order/spot-borrow-check',params:{category:'spot',symbol:s,side:direction}});
+ return bybitPrivateRequest({env,path:'/v5/order/spot-borrow-check',params:{category:'spot',symbol:s,side:direction},fetchImpl});
 }
-export async function getBybitSpotMaxBorrowable({env,currency}={}){
+export async function getBybitSpotMaxBorrowable({env,currency,fetchImpl=fetch}={}){
  if(!currency)throw new TypeError('A currency is required');
- return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/max-borrowable',params:{currency:String(currency).toUpperCase()}});
+ return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/max-borrowable',params:{currency:String(currency).toUpperCase()},fetchImpl});
 }
-export async function getBybitSpotMarginLiability({env,currency}={}){
+export async function getBybitSpotMarginLiability({env,currency,fetchImpl=fetch}={}){
  if(!currency)throw new TypeError('A currency is required for spot margin liability');
- return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/liability',params:{currency:String(currency).toUpperCase()}});
+ return bybitPrivateRequest({env,path:'/v5/spot-margin-trade/liability',params:{currency:String(currency).toUpperCase()},fetchImpl});
 }
 export async function getBybitAccountInfo({env}={}){
  return bybitPrivateRequest({env,path:'/v5/account/info'});
