@@ -89,9 +89,9 @@ export async function getBybitCollateralInfo({env,currency}={}){
 export async function getBybitWalletBalance({env,accountType='UNIFIED',coin}={}){
  return bybitPrivateRequest({env,path:'/v5/account/wallet-balance',params:{accountType,coin}});
 }
-export async function getBybitPositions({env,category='linear',symbol,settleCoin,limit=200,cursor}={}){
- const c=assertCategory(category);if(c==='spot'||c==='option')throw new TypeError('Position listing supports linear and inverse categories');
- return bybitPrivateRequest({env,path:'/v5/position/list',params:{category:c,symbol:symbol?assertSymbol(symbol):undefined,settleCoin,limit:Math.min(200,Math.max(1,Number(limit)||200)),cursor}});
+export async function getBybitPositions({env,category='linear',symbol,settleCoin,baseCoin,limit=200,cursor}={}){
+ const c=assertCategory(category);if(c==='spot')throw new TypeError('Spot balances are reported through the Unified wallet endpoint');
+ return bybitPrivateRequest({env,path:'/v5/position/list',params:{category:c,symbol:symbol?assertSymbol(symbol):undefined,settleCoin,baseCoin,limit:Math.min(200,Math.max(1,Number(limit)||200)),cursor}});
 }
 export async function getBybitOpenOrders({env,category='linear',symbol,openOnly=0,limit=50,cursor}={}){
  const c=assertCategory(category);
@@ -106,18 +106,21 @@ export async function getBybitExecutions({env,category='linear',symbol,limit=50,
  return bybitPrivateRequest({env,path:'/v5/execution/list',params:{category:c,symbol:symbol?assertSymbol(symbol):undefined,limit:Math.min(100,Math.max(1,Number(limit)||50)),cursor,startTime,endTime}});
 }
 export async function getBybitAccountSnapshot({env}={}){
- const [wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spot,option]=await Promise.allSettled([
+ const [wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spotOrders,optionOrders]=await Promise.allSettled([
   getBybitWalletBalance({env,accountType:'UNIFIED'}),
   getBybitAccountInfo({env}),
   getBybitCollateralInfo({env}),
+  getBybitSpotMarginState({env}),
   getBybitPositions({env,category:'linear'}),
   getBybitPositions({env,category:'inverse'}),
+  getBybitPositions({env,category:'option',baseCoin:'BTC'}),
   getBybitOpenOrders({env,category:'spot',limit:50}),
   getBybitOpenOrders({env,category:'option',limit:50})
  ]);
  const value=x=>x.status==='fulfilled'?x.value:null;
- const errors=[wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spot,option].map((x,i)=>x.status==='rejected'?['wallet','accountInfo','collateral','spotMarginState','linearPositions','inversePositions','optionPositions','spotOrders','optionOrders'][i]+': '+x.reason.message:null).filter(Boolean);
- return{exchange:'BYBIT',accountType:'UNIFIED',wallet:value(wallet),accountInfo:value(accountInfo),collateral:value(collateral)?.list||[],spotMarginState:value(spotMarginState),linearPositions:value(linear)?.list||[],inversePositions:value(inverse)?.list||[],optionPositions:value(optionPositions)?.list||[],spotOpenOrders:value(spot)?.list||[],optionOpenOrders:value(option)?.list||[],errors,timestamp:Date.now(),readOnly:true};
+ const errors=[wallet,accountInfo,collateral,spotMarginState,linear,inverse,optionPositions,spotOrders,optionOrders]
+  .map((x,i)=>x.status==='rejected'?['wallet','accountInfo','collateral','spotMarginState','linearPositions','inversePositions','optionPositions','spotOrders','optionOrders'][i]+': '+x.reason.message:null).filter(Boolean);
+ return{exchange:'BYBIT',accountType:'UNIFIED',wallet:value(wallet),accountInfo:value(accountInfo),collateral:value(collateral)?.list||[],spotMarginState:value(spotMarginState),linearPositions:value(linear)?.list||[],inversePositions:value(inverse)?.list||[],optionPositions:value(optionPositions)?.list||[],spotOpenOrders:value(spotOrders)?.list||[],optionOpenOrders:value(optionOrders)?.list||[],errors,timestamp:Date.now(),readOnly:true};
 }
 // Deliberately locked. The V5 connector is live-market and authenticated-account capable,
 // but order placement remains unavailable until server-side risk attestation, protected-order
