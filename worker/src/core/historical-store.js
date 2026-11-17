@@ -5,7 +5,7 @@ export async function persistMarketObservation(db,input){
   if(!db) throw new Error('D1 database binding is unavailable');
   const o=validateMarketObservation(input),key=id();
   const result=await db.prepare("INSERT OR IGNORE INTO market_observations (id,exchange,product_type,symbol,observation_type,observed_at_ms,data_json,quality,source) VALUES (?,?,?,?,?,?,?,?,?)")
-    .bind(key,o.source,o.productType,o.symbol,o.observationType,o.observedAt,JSON.stringify(o.data),'VALID',o.source).run();
+    .bind(key,o.exchange,o.productType,o.symbol,o.observationType,o.observedAt,JSON.stringify(o.data),'VALID',o.source).run();
   return {stored:Boolean(result.meta?.changes),duplicate:!result.meta?.changes,observation:{...o,id:key}};
 }
 export async function readMarketHistory(db,{symbol,productType='USDT-FUTURES',hours=24,limit=1000}={}){
