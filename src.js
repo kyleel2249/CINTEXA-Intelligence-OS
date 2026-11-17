@@ -105,7 +105,8 @@ refreshBybitInstruments().then(refreshBybit);setInterval(()=>{if(!document.hidde
 
 const bybitPlanCategory=$('#bybit-plan-category');
 bybitPlanCategory?.addEventListener('change',()=>{
- const inverse=bybitPlanCategory.value==='inverse',spot=bybitPlanCategory.value==='spot';\n if($('#bybit-category').value!==bybitPlanCategory.value){$('#bybit-category').value=bybitPlanCategory.value;await refreshBybitInstruments();refreshBybit()}
+ const inverse=bybitPlanCategory.value==='inverse',spot=bybitPlanCategory.value==='spot';
+ if($('#bybit-category').value!==bybitPlanCategory.value){$('#bybit-category').value=bybitPlanCategory.value;await refreshBybitInstruments();refreshBybit()}
  $('#bybit-plan-contract-value').disabled=!inverse;$('#bybit-plan-contract-value').required=inverse;
  $('#bybit-plan-margin').disabled=spot;
  $('#bybit-plan-use-margin').disabled=!spot;
