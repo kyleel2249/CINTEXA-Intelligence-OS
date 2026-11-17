@@ -2,7 +2,7 @@ import { evaluateTrade } from './core/signals.js';
 import { buildTradePlan } from './core/trade-planner.js';
 import { submitBitgetLiveOrder } from './exchanges/bitget.js';
 import { getBitgetInstruments, getBitgetTicker, getBitgetCandles, getBitgetMarketContext, analyseOrderBook, UpstreamError } from './exchanges/bitget-market.js';
-import { getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
+import { getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
 import { persistMarketObservation, readMarketHistory, recordSignalAndOutcome, evaluatePendingOutcomes, readSignalPerformance } from './core/historical-store.js';
 
 const PRODUCT_TYPES = new Set(['SPOT', 'MARGIN', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES']);
@@ -228,7 +228,7 @@ export default {
       }
       if (u.pathname === '/api/bybit/account' && req.method === 'GET') {
         await requireExchangeReadToken(req,env);
-        return json({exchange:'BYBIT',accountType:u.searchParams.get('accountType')||'UNIFIED',data:await getBybitWalletBalance({env,accountType:u.searchParams.get('accountType')||'UNIFIED',coin:u.searchParams.get('coin')||undefined}),readOnly:true},200,env);
+        return json({exchange:'BYBIT',accountType:u.searchParams.get('accountType')||'UNIFIED',data:await getBybitAccountSnapshot({env}),readOnly:true},200,env);
       }
       if (u.pathname === '/api/bybit/positions' && req.method === 'GET') {
         await requireExchangeReadToken(req,env);
