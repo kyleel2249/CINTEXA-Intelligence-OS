@@ -5,3 +5,5 @@ test('rejects stale order book snapshots',()=>{const r=analyseMarketMicrostructu
 test('rejects spreads above liquidity threshold',()=>{const r=analyseMarketMicrostructure({...context,orderBook:{...context.orderBook,spreadBps:20}},{direction:'BUY',now:101000});assert.equal(r.approved,false)});
 test('flags crowded long carry without inventing open-interest direction',()=>{const r=analyseMarketMicrostructure(context,{direction:'BUY',now:101000});assert.ok(r.reasons.some(x=>x.includes('Positive funding')));assert.equal(r.openInterest.size,100)});
 test('fails closed when order-book evidence is missing',()=>{const r=analyseMarketMicrostructure(null,{direction:'BUY'});assert.equal(r.approved,false)});
+
+test('exposes open-interest availability without implying a trend from one sample',()=>{const r=analyseMarketMicrostructure({...context,productType:'USDT-FUTURES'},{direction:'BUY',now:101000});assert.equal(r.openInterestAvailable,true);assert.equal(r.derivativesContextAvailable,true);assert.equal(r.openInterestChange,undefined)});
