@@ -2,7 +2,7 @@ import { evaluateTrade } from './core/signals.js';
 import { buildTradePlan } from './core/trade-planner.js';
 import { submitBitgetLiveOrder } from './exchanges/bitget.js';
 import { getBitgetInstruments, getBitgetTicker, getBitgetCandles, getBitgetMarketContext, analyseOrderBook, UpstreamError } from './exchanges/bitget-market.js';
-import { getBybitInstruments, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitSpotMarginLiability, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
+import { getBybitInstruments, getBybitInstrumentCatalog, getBybitTicker, getBybitCandles, getBybitMarketContext, getBybitWalletBalance, getBybitAccountSnapshot, getBybitSpotBorrowQuota, getBybitSpotMaxBorrowable, getBybitSpotMarginLiability, getBybitPositions, getBybitOpenOrders, getBybitOrderHistory, getBybitExecutions, submitBybitLiveOrder } from './exchanges/bybit.js';
 import { persistMarketObservation, readMarketHistory, recordSignalAndOutcome, evaluatePendingOutcomes, readSignalPerformance } from './core/historical-store.js';
 
 const PRODUCT_TYPES = new Set(['SPOT', 'MARGIN', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES', 'LINEAR', 'INVERSE', 'OPTION', 'BYBIT-SPOT', 'BYBIT-LINEAR', 'BYBIT-INVERSE']);
@@ -214,7 +214,7 @@ export default {
       }
       if (u.pathname === '/api/bybit/signals' && req.method === 'POST') return await handleBybitSignals(req,env);\n      if (u.pathname === '/api/bybit/market/instruments' && req.method === 'GET') {
         const category=u.searchParams.get('category')||'linear',symbol=u.searchParams.get('symbol')||undefined,baseCoin=u.searchParams.get('baseCoin')||undefined;
-        return json({exchange:'BYBIT',category,...await getBybitInstruments({env,category,symbol,baseCoin,limit:u.searchParams.get('limit')||1000,cursor:u.searchParams.get('cursor')||undefined})},200,env);
+        const data=u.searchParams.get('all')==='true'?await getBybitInstrumentCatalog({env,category,baseCoin,limit:u.searchParams.get('limit')||1000,maxPages:u.searchParams.get('maxPages')||10}):await getBybitInstruments({env,category,symbol,baseCoin,limit:u.searchParams.get('limit')||1000,cursor:u.searchParams.get('cursor')||undefined});\n        return json({exchange:'BYBIT',category,...data},200,env);
       }
       if (u.pathname === '/api/bybit/market/ticker' && req.method === 'GET') {
         return json(await getBybitTicker({env,category:u.searchParams.get('category')||'linear',symbol:u.searchParams.get('symbol')}),200,env);
