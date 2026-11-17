@@ -29,8 +29,8 @@ test('builds a Bybit Spot Margin preview only when margin is enabled and fresh b
 test('blocks Spot Margin preview when account margin mode is off',()=>{
  assert.throws(()=>buildBybitTradePlan({input:{...base,category:'spot',useSpotMargin:true},instrument:spot,spotMarginState:{spotMarginMode:'0',spotLeverage:'5'},borrowQuota:{maxTradeAmount:'250',maxTradeQty:'2'}}),/not enabled/);
 });
-test('rejects unsupported inverse and options trade plans instead of mis-sizing contracts',()=>{
- for(const category of ['inverse','option'])assert.throws(()=>buildBybitTradePlan({input:{...base,category},instrument:{...linear,symbol:'BTCUSDT'}}),/dedicated contract-payoff models/);
+test('rejects Options trade plans until a premium-and-Greeks risk model is added',()=>{
+ assert.throws(()=>buildBybitTradePlan({input:{...base,category:'option'},instrument:{...linear,symbol:'BTCUSDT'}}),/premium-and-Greeks/);
 });
 test('rejects leverage above Bybit instrument maximum',()=>{
  assert.throws(()=>buildBybitTradePlan({input:{...base,category:'linear',leverage:150},instrument:linear}),/outside permitted bounds|exchange maximum/);
