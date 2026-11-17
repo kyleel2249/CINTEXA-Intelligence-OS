@@ -21,7 +21,7 @@ export function validateMarketObservation(input = {}) {
   if (observationType === 'OPEN_INTEREST' && (!finite(d.size) || Number(d.size) < 0)) throw new TypeError('Open-interest observation requires a non-negative size');
   if (observationType === 'TICKER' && (!finite(d.last) || Number(d.last) <= 0)) throw new TypeError('Ticker observation requires a positive last price');
   const exchange=String(input.exchange||'BITGET').toUpperCase();
-  if(exchange!=='BITGET') throw new TypeError('Only the configured Bitget market source is accepted');
+  if(!['BITGET','BYBIT'].includes(exchange)) throw new TypeError('Unsupported exchange provenance');
   return { exchange, observationType, symbol, productType, observedAt: Math.floor(observedAt), data: d, source: String(input.source || 'BITGET').slice(0,40) };
 }
 
